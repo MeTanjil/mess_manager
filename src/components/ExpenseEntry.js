@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import {
+  getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc
+} from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
+
+import {
+  Box, Card, CardContent, Typography, Button, TextField, Select, MenuItem, InputLabel, FormControl,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Stack, Tooltip
+} from '@mui/material';
+import SaveIcon from '@mui/icons-material/Save';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
 
 const db = getFirestore();
 
@@ -19,7 +30,7 @@ export default function ExpenseEntry({ members, showToast }) {
     const q = query(collection(db, 'expenses'), where('monthId', '==', currentMonth));
     const snapshot = await getDocs(q);
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setExpenses(data.sort((a, b) => (a.date < b.date ? 1 : -1)));
+    setExpenses(data.sort((a, b) => a.date.localeCompare(b.date)));
   };
 
   useEffect(() => {
@@ -32,19 +43,16 @@ export default function ExpenseEntry({ members, showToast }) {
     e.preventDefault();
 
     if (!date || !amount || !purpose) {
-      showToast("সব ঘর পূরণ করুন!", "error");
+      showToast && showToast("সব ঘর পূরণ করুন!", "error");
       return;
     }
-
-    // এখন দুই type-ই payerId লাগবে
     if (!payerId) {
-      showToast("কে টাকা দিয়েছে সেটি নির্বাচন করুন!", "error");
+      showToast && showToast("কে টাকা দিয়েছে সেটি নির্বাচন করুন!", "error");
       return;
     }
 
     try {
       if (editId) {
-        // Update
         await updateDoc(doc(db, 'expenses', editId), {
           date,
           amount: Number(amount),
@@ -53,9 +61,8 @@ export default function ExpenseEntry({ members, showToast }) {
           payerId,
           monthId: currentMonth,
         });
-        showToast("খরচ আপডেট হয়েছে!", "success");
+        showToast && showToast("খরচ আপডেট হয়েছে!", "success");
       } else {
-        // Add
         await addDoc(collection(db, 'expenses'), {
           date,
           amount: Number(amount),
@@ -64,7 +71,7 @@ export default function ExpenseEntry({ members, showToast }) {
           payerId,
           monthId: currentMonth,
         });
-        showToast("খরচ সংরক্ষণ হয়েছে!", "success");
+        showToast && showToast("খরচ সংরক্ষণ হয়েছে!", "success");
       }
 
       setDate('');
@@ -76,30 +83,27 @@ export default function ExpenseEntry({ members, showToast }) {
       fetchExpenses();
     } catch (err) {
       console.error(err);
-      showToast("সেভ করতে সমস্যা হয়েছে!", "error");
+      showToast && showToast("সেভ করতে সমস্যা হয়েছে!", "error");
     }
   };
 
-  // সদস্য নাম বের করা
   const getMemberName = (id) => {
     const m = members.find(m => m.id === id);
     return m ? m.name : '';
   };
 
-  // Delete expense
   const handleDelete = async (id) => {
     if (!window.confirm("আপনি কি নিশ্চিত? ডিলিট করলে আর ফেরত পাবেন না!")) return;
     try {
       await deleteDoc(doc(db, 'expenses', id));
-      showToast("খরচ ডিলিট হয়েছে!", "success");
+      showToast && showToast("খরচ ডিলিট হয়েছে!", "success");
       fetchExpenses();
     } catch (err) {
       console.error(err);
-      showToast("ডিলিট করতে সমস্যা হয়েছে!", "error");
+      showToast && showToast("ডিলিট করতে সমস্যা হয়েছে!", "error");
     }
   };
 
-  // Edit expense
   const handleEdit = (exp) => {
     setEditId(exp.id);
     setDate(exp.date);
@@ -109,7 +113,6 @@ export default function ExpenseEntry({ members, showToast }) {
     setPayerId(exp.payerId || '');
   };
 
-  // Cancel edit
   const handleCancelEdit = () => {
     setEditId(null);
     setDate('');
@@ -120,107 +123,209 @@ export default function ExpenseEntry({ members, showToast }) {
   };
 
   return (
-    <div>
-      <h2>💰 খরচ এন্ট্রি</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>তারিখ:</label>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} required />
-        </div>
-        <div>
-          <label>পরিমাণ:</label>
-          <input type="number" value={amount} onChange={e => setAmount(e.target.value)} required />
-        </div>
-        <div>
-          <label>কারণ:</label>
-          <input type="text" value={purpose} onChange={e => setPurpose(e.target.value)} required />
-        </div>
-        <div>
-          <label>খরচের ধরন:</label>
-          <select value={type} onChange={e => setType(e.target.value)}>
-            <option value="shared">Shared</option>
-            <option value="individual">Individual</option>
-          </select>
-        </div>
-        {/* এখন দুই type-ই payerId চাইবে */}
-        <div>
-          <label>কে টাকা দিল?</label>
-          <select value={payerId} onChange={e => setPayerId(e.target.value)}>
-            <option value="">সদস্য নির্বাচন করুন</option>
-            {members.map(m => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
-        </div>
-        <button type="submit" style={{ marginTop: 10 }}>
-          {editId ? "✏️ আপডেট করুন" : "✅ সংরক্ষণ করুন"}
-        </button>
-        {editId && (
-          <button type="button" onClick={handleCancelEdit} style={{ marginLeft: 10 }}>
-            বাতিল
-          </button>
-        )}
-      </form>
+    <Box>
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+        💰 খরচ এন্ট্রি
+      </Typography>
+      {/* Entry Form */}
+      <Card sx={{ maxWidth: 540, mx: "auto", boxShadow: 3, borderRadius: 4, bgcolor: "#f9fbfd", mb: 4 }}>
+        <CardContent>
+          <form onSubmit={handleSubmit}>
+            <Stack spacing={2}>
+              <TextField
+                label="তারিখ"
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                required
+                sx={{ bgcolor: "#fff" }}
+                size="small"
+              />
+              <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
+                <InputLabel id="payer-label">কে টাকা দিয়েছে?</InputLabel>
+                <Select
+                  labelId="payer-label"
+                  value={payerId}
+                  label="কে টাকা দিয়েছে?"
+                  onChange={e => setPayerId(e.target.value)}
+                >
+                  <MenuItem value=""><em>সদস্য নির্বাচন করুন</em></MenuItem>
+                  {members.map(m => (
+                    <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="পরিমাণ (৳)"
+                type="number"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                required
+                inputProps={{
+                  min: 1,
+                  step: 1,
+                  style: { textAlign: "center", fontWeight: 700, fontSize: 18 }
+                }}
+                sx={{ bgcolor: "#fff", width: 160 }}
+                size="small"
+              />
+              <TextField
+                label="কারণ/বিবরণ"
+                value={purpose}
+                onChange={e => setPurpose(e.target.value)}
+                required
+                sx={{ bgcolor: "#fff" }}
+                size="small"
+              />
+              <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
+                <InputLabel id="type-label">খরচের ধরন</InputLabel>
+                <Select
+                  labelId="type-label"
+                  value={type}
+                  label="খরচের ধরন"
+                  onChange={e => setType(e.target.value)}
+                >
+                  <MenuItem value="shared">Shared</MenuItem>
+                  <MenuItem value="individual">Individual</MenuItem>
+                </Select>
+              </FormControl>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Button
+                  type="submit"
+                  variant="contained"
+                  startIcon={editId ? <EditIcon /> : <SaveIcon />}
+                  sx={{ px: 4, fontWeight: 600, fontSize: 16, borderRadius: 2 }}
+                >
+                  {editId ? "আপডেট করুন" : "সংরক্ষণ করুন"}
+                </Button>
+                {editId && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<CloseIcon />}
+                    onClick={handleCancelEdit}
+                  >
+                    বাতিল
+                  </Button>
+                )}
+              </Stack>
+            </Stack>
+          </form>
+        </CardContent>
+      </Card>
 
-      {/* নিচে খরচের ডিটেইল টেবিল */}
-      <h3 style={{ marginTop: 40 }}>🧾 খরচের তালিকা</h3>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 480, marginTop: 10 }}>
-          <thead>
-            <tr style={{ background: '#e7eaf6' }}>
-              <th style={{ border: '1px solid #bbb', padding: '7px' }}>তারিখ</th>
-              <th style={{ border: '1px solid #bbb', padding: '7px' }}>পরিমাণ</th>
-              <th style={{ border: '1px solid #bbb', padding: '7px' }}>ধরন</th>
-              <th style={{ border: '1px solid #bbb', padding: '7px' }}>কে দিল</th>
-              <th style={{ border: '1px solid #bbb', padding: '7px' }}>কারণ</th>
-              <th style={{ border: '1px solid #bbb', padding: '7px' }}>অ্যাকশন</th>
-            </tr>
-          </thead>
-          <tbody>
+      {/* Table */}
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+        🧾 খরচের তালিকা ({currentMonth})
+      </Typography>
+      <TableContainer component={Paper} sx={{
+        maxWidth: 1100,
+        mx: "auto",
+        boxShadow: 2,
+        borderRadius: 3,
+        mt: 2,
+        background: "#fff"
+      }}>
+        <Table size="medium">
+          <TableHead>
+            <TableRow sx={{ background: "#f6faff" }}>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>তারিখ</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>সদস্য</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>টাকার পরিমাণ</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>কারণ/বিবরণ</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>ধরন</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>একশন</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {expenses.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: 15, color: '#888' }}>
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ color: "#888", py: 4, fontSize: 16 }}>
                   কোনো খরচ এন্ট্রি নেই
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               expenses.map(exp => (
-                <tr key={exp.id}>
-                  <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'center' }}>{exp.date}</td>
-                  <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'right' }}>{exp.amount} টাকা</td>
-                  <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'center' }}>
+                <TableRow key={exp.id} hover sx={{
+                  transition: "all 0.18s", "&:hover": { background: "#f8fbff" }
+                }}>
+                  <TableCell align="center" sx={{ fontSize: 16 }}>{exp.date}</TableCell>
+                  <TableCell align="center" sx={{ fontSize: 16 }}>{getMemberName(exp.payerId)}</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: "#1976d2", fontSize: 17 }}>
+                    {exp.amount} টাকা
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontSize: 15, wordBreak: "break-word" }}>{exp.purpose}</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 500 }}>
                     {exp.type === 'shared' ? 'Shared' : 'Individual'}
-                  </td>
-                  <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'center' }}>
-                    {getMemberName(exp.payerId)}
-                  </td>
-                  <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'center' }}>{exp.purpose}</td>
-                  <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'center' }}>
-                    <button
-                      style={{ marginRight: 8, color: "#1976d2", border: "none", background: "none", cursor: "pointer" }}
-                      onClick={() => handleEdit(exp)}
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      style={{ color: "red", border: "none", background: "none", cursor: "pointer" }}
-                      onClick={() => handleDelete(exp.id)}
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Stack direction="row" spacing={1} justifyContent="center">
+                      <Tooltip title="এডিট করুন">
+                        <Button
+                          color="primary"
+                          size="small"
+                          variant="outlined"
+                          startIcon={<EditIcon />}
+                          onClick={() => handleEdit(exp)}
+                          sx={{
+                            minWidth: 0,
+                            px: 1.2,
+                            borderRadius: 2,
+                            fontWeight: 600,
+                            border: "1.5px solid #1976d2",
+                            background: "#f7fbff",
+                            '&:hover': {
+                              background: "#e3f0ff",
+                              border: "1.5px solid #0a56a3"
+                            },
+                            boxShadow: 0,
+                            textTransform: "none",
+                            cursor: "pointer"
+                          }}
+                        >
+                          এডিট
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="ডিলিট করুন">
+                        <Button
+                          color="error"
+                          size="small"
+                          variant="outlined"
+                          startIcon={<DeleteIcon />}
+                          onClick={() => handleDelete(exp.id)}
+                          sx={{
+                            minWidth: 0,
+                            px: 1.2,
+                            borderRadius: 2,
+                            fontWeight: 600,
+                            border: "1.5px solid #e53935",
+                            background: "#fff7f7",
+                            '&:hover': {
+                              background: "#ffeaea",
+                              border: "1.5px solid #b71c1c"
+                            },
+                            boxShadow: 0,
+                            textTransform: "none",
+                            cursor: "pointer"
+                          }}
+                        >
+                          ডিলিট
+                        </Button>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
   );
 }
 
 // ===== Member Delete করলে তার সব Expense অটো ডিলিট করার ফাংশন =====
-
 export async function deleteMemberExpenses(memberId) {
   const db = getFirestore();
   const expenseQuery = query(collection(db, 'expenses'), where('payerId', '==', memberId));

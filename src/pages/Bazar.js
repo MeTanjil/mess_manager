@@ -9,7 +9,16 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
-import ConfirmDialog from '../components/ConfirmDialog'; // ✅ import
+import ConfirmDialog from '../components/ConfirmDialog';
+
+import {
+  Box, Card, CardContent, Typography, Button, TextField, Select, MenuItem, InputLabel, FormControl,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Stack, Tooltip
+} from '@mui/material';
+import SaveIcon from '@mui/icons-material/Save';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
 
 const db = getFirestore();
 
@@ -18,11 +27,10 @@ export default function Bazar({ showToast }) {
   const [date, setDate] = useState('');
   const [person, setPerson] = useState('');
   const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
   const [bazarList, setBazarList] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const { currentMonth } = useMonth();
-
-  // Modal state for delete confirmation
   const [confirmState, setConfirmState] = useState({ show: false, id: null, date: '', person: '' });
 
   useEffect(() => {
@@ -46,13 +54,12 @@ export default function Bazar({ showToast }) {
     setDate('');
     setPerson('');
     setAmount('');
+    setDescription('');
     setEditingId(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validation
     if (!date) {
       showToast && showToast("তারিখ দিন!", "error");
       return;
@@ -65,31 +72,37 @@ export default function Bazar({ showToast }) {
       showToast && showToast("সঠিক টাকার পরিমাণ লিখুন (১ বা তার বেশি)!", "error");
       return;
     }
+    if (!description.trim()) {
+      showToast && showToast("বিবরণ লিখুন (কী কী কেনা হয়েছে)!", "error");
+      return;
+    }
 
     if (editingId) {
-      // Update
       await updateDoc(doc(db, 'bazar', editingId), {
         date,
         person,
         amount: Number(amount),
+        description,
         monthId: currentMonth,
       });
       setBazarList(prev =>
-        prev.map(b => b.id === editingId ? { ...b, date, person, amount: Number(amount) } : b)
+        prev.map(b => b.id === editingId ? { ...b, date, person, amount: Number(amount), description } : b)
       );
       showToast && showToast("বাজার এন্ট্রি আপডেট হয়েছে!", "success");
     } else {
-      // Add new
       const docRef = await addDoc(collection(db, 'bazar'), {
         date,
         person,
         amount: Number(amount),
+        description,
         monthId: currentMonth,
       });
-      setBazarList(prev => [...prev, { id: docRef.id, date, person, amount: Number(amount), monthId: currentMonth }]);
+      setBazarList(prev => [
+        ...prev,
+        { id: docRef.id, date, person, amount: Number(amount), description, monthId: currentMonth }
+      ]);
       showToast && showToast("বাজার এন্ট্রি সফলভাবে সংরক্ষণ হয়েছে!", "success");
     }
-
     resetForm();
   };
 
@@ -97,11 +110,11 @@ export default function Bazar({ showToast }) {
     setDate(bazar.date);
     setPerson(bazar.person);
     setAmount(bazar.amount);
+    setDescription(bazar.description || '');
     setEditingId(bazar.id);
     showToast && showToast("এডিট মোডে আছো!", "info");
   };
 
-  // Custom confirm delete
   const handleDelete = async (id) => {
     await deleteDoc(doc(db, 'bazar', id));
     setBazarList(prev => prev.filter(b => b.id !== id));
@@ -109,47 +122,196 @@ export default function Bazar({ showToast }) {
   };
 
   return (
-    <div>
-      <h2>🛒 বাজার এন্ট্রি</h2>
-      <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
-        <label>তারিখ: </label>
-        <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-        <br /><br />
-        <label>কে বাজার করেছে: </label>
-        <select value={person} onChange={e => setPerson(e.target.value)}>
-          <option value="">-- সদস্য নির্বাচন করুন --</option>
-          {members.map(m => (
-            <option key={m.id} value={m.name}>{m.name}</option>
-          ))}
-        </select>
-        <br /><br />
-        <label>টাকার পরিমাণ: </label>
-        <input
-          type="number"
-          min="0"
-          step="1"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-        />
-        <br /><br />
+    <Box>
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+        🛒 বাজার এন্ট্রি
+      </Typography>
 
-        <button type="submit">{editingId ? "✏️ আপডেট করুন" : "✅ সেভ করুন"}</button>{' '}
-        {editingId && <button type="button" onClick={resetForm}>❌ বাতিল</button>}
-      </form>
+      <Card sx={{ maxWidth: 540, mx: "auto", boxShadow: 3, borderRadius: 4, bgcolor: "#f9fbfd", mb: 4 }}>
+        <CardContent>
+          <form onSubmit={handleSubmit}>
+            <Stack spacing={2}>
+              <TextField
+                label="তারিখ"
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                required
+                sx={{ bgcolor: "#fff" }}
+                size="small"
+              />
+              <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
+                <InputLabel id="person-label">কে বাজার করেছে</InputLabel>
+                <Select
+                  labelId="person-label"
+                  value={person}
+                  label="কে বাজার করেছে"
+                  onChange={e => setPerson(e.target.value)}
+                >
+                  <MenuItem value=""><em>-- সদস্য নির্বাচন করুন --</em></MenuItem>
+                  {members.map(m => (
+                    <MenuItem key={m.id} value={m.name}>{m.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="টাকার পরিমাণ"
+                type="number"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                inputProps={{
+                  min: 1,
+                  step: 1,
+                  style: { textAlign: "center", fontWeight: 700, fontSize: 18 }
+                }}
+                required
+                sx={{ bgcolor: "#fff", width: 160 }}
+                size="small"
+              />
+              <TextField
+                label="বিবরণ (কী কী বাজার করেছেন)"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                multiline
+                minRows={2}
+                maxRows={4}
+                required
+                sx={{ bgcolor: "#fff" }}
+                size="small"
+                placeholder="যেমন: চাল, ডাল, তেল, সাবান"
+              />
 
-      <hr />
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Button
+                  type="submit"
+                  variant="contained"
+                  startIcon={editingId ? <EditIcon /> : <SaveIcon />}
+                  sx={{ px: 4, fontWeight: 600, fontSize: 16, borderRadius: 2 }}
+                >
+                  {editingId ? "আপডেট করুন" : "সেভ করুন"}
+                </Button>
+                {editingId && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<CloseIcon />}
+                    onClick={resetForm}
+                  >
+                    বাতিল
+                  </Button>
+                )}
+              </Stack>
+            </Stack>
+          </form>
+        </CardContent>
+      </Card>
 
-      <h3>এই মাসের বাজারের তালিকা ({currentMonth}):</h3>
-      {bazarList.length === 0 && <p>কোন বাজার এন্ট্রি নেই।</p>}
-      <ul>
-        {bazarList.sort((a, b) => a.date.localeCompare(b.date)).map(bazar => (
-          <li key={bazar.id}>
-            📅 {bazar.date} — 👤 {bazar.person} — 💸 {bazar.amount} টাকা{' '}
-            <button onClick={() => handleEdit(bazar)}>✏️</button>{' '}
-            <button onClick={() => setConfirmState({ show: true, id: bazar.id, date: bazar.date, person: bazar.person })}>🗑️</button>
-          </li>
-        ))}
-      </ul>
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+        এই মাসের বাজারের তালিকা ({currentMonth}):
+      </Typography>
+      <TableContainer component={Paper} sx={{
+        maxWidth: 1050,
+        mx: "auto",
+        boxShadow: 2,
+        borderRadius: 4,
+        mt: 2,
+        background: "#fff"
+      }}>
+        <Table size="medium">
+          <TableHead>
+            <TableRow sx={{ background: "#f3f7fa" }}>
+              <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 140 }}>তারিখ</TableCell>
+              <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 210 }}>সদস্য</TableCell>
+              <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 170 }}>টাকার পরিমাণ</TableCell>
+              <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 260 }}>বিবরণ</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 16, width: 110 }}>একশন</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {bazarList.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ color: "#888", py: 4, fontSize: 16 }}>
+                  কোনো বাজার এন্ট্রি নেই।
+                </TableCell>
+              </TableRow>
+            ) : (
+              bazarList.sort((a, b) => a.date.localeCompare(b.date)).map(bazar => (
+                <TableRow key={bazar.id} hover sx={{
+                  transition: "all 0.18s", "&:hover": { background: "#f8fbff" }
+                }}>
+                  <TableCell align="left" sx={{ fontSize: 16 }}>{bazar.date}</TableCell>
+                  <TableCell align="left" sx={{ fontSize: 16 }}>{bazar.person}</TableCell>
+                  <TableCell align="left" sx={{ fontWeight: 700, color: "#1976d2", fontSize: 17 }}>
+                    {bazar.amount} টাকা
+                  </TableCell>
+                  <TableCell align="left" sx={{ fontSize: 15, wordBreak: "break-word", whiteSpace: "pre-line" }}>
+                    {bazar.description || <span style={{ color: "#bbb" }}>-</span>}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Stack direction="row" spacing={1} justifyContent="center">
+                      <Tooltip title="এডিট করুন">
+                        <Button
+                          color="primary"
+                          size="small"
+                          variant="outlined"
+                          startIcon={<EditIcon />}
+                          onClick={() => handleEdit(bazar)}
+                          sx={{
+                            minWidth: 0,
+                            px: 1.2,
+                            borderRadius: 2,
+                            fontWeight: 600,
+                            border: "1.5px solid #1976d2",
+                            background: "#f7fbff",
+                            '&:hover': {
+                              background: "#e3f0ff",
+                              border: "1.5px solid #0a56a3"
+                            },
+                            boxShadow: 0,
+                            textTransform: "none",
+                            cursor: "pointer"
+                          }}
+                        >
+                          এডিট
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="ডিলিট করুন">
+                        <Button
+                          color="error"
+                          size="small"
+                          variant="outlined"
+                          startIcon={<DeleteIcon />}
+                          onClick={() =>
+                            setConfirmState({ show: true, id: bazar.id, date: bazar.date, person: bazar.person })
+                          }
+                          sx={{
+                            minWidth: 0,
+                            px: 1.2,
+                            borderRadius: 2,
+                            fontWeight: 600,
+                            border: "1.5px solid #e53935",
+                            background: "#fff7f7",
+                            '&:hover': {
+                              background: "#ffeaea",
+                              border: "1.5px solid #b71c1c"
+                            },
+                            boxShadow: 0,
+                            textTransform: "none",
+                            cursor: "pointer"
+                          }}
+                        >
+                          ডিলিট
+                        </Button>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Custom Confirm Modal */}
       <ConfirmDialog
@@ -167,6 +329,6 @@ export default function Bazar({ showToast }) {
         }}
         onCancel={() => setConfirmState({ show: false, id: null, date: '', person: '' })}
       />
-    </div>
+    </Box>
   );
 }

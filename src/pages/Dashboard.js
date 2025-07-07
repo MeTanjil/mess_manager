@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 import { useMonth } from '../context/MonthContext';
+import {
+  Grid, Card, CardContent, Typography, Box, Divider, CircularProgress
+} from '@mui/material';
 
 const db = getFirestore();
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#d84c4c', '#82ca9d'];
@@ -12,9 +15,11 @@ export default function Dashboard() {
   const [meals, setMeals] = useState([]);
   const [bazars, setBazars] = useState([]);
   const [deposits, setDeposits] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAll = async () => {
+      setLoading(true);
       const memberSnap = await getDocs(collection(db, 'members'));
       setMembers(memberSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
@@ -26,6 +31,8 @@ export default function Dashboard() {
 
       const depositSnap = await getDocs(collection(db, 'deposits'));
       setDeposits(depositSnap.docs.map(doc => doc.data()).filter(d => d.monthId === currentMonth));
+
+      setLoading(false);
     };
     if (currentMonth) fetchAll();
   }, [currentMonth]);
@@ -92,89 +99,153 @@ export default function Dashboard() {
     value: distributedCost[m.id] || 0,
   }));
 
-  return (
-    <div>
-      <h2>📊 Dashboard ({currentMonth})</h2>
-      <div style={{display: 'flex', gap: 30, flexWrap: 'wrap', marginBottom: 30}}>
-        <div style={{background:'#f5f5f5', padding: 20, borderRadius: 12, minWidth: 160}}>
-          <b>👥 মোট সদস্য:</b> <br /> {members.length}
-        </div>
-        <div style={{background:'#f5f5f5', padding: 20, borderRadius: 12, minWidth: 160}}>
-          <b>🍽️ মোট মিল:</b> <br /> {totalMeals}
-        </div>
-        <div style={{background:'#f5f5f5', padding: 20, borderRadius: 12, minWidth: 160}}>
-          <b>💸 মোট বাজার:</b> <br /> {totalBazar} টাকা
-        </div>
-        <div style={{background:'#f5f5f5', padding: 20, borderRadius: 12, minWidth: 160}}>
-          <b>💰 মোট জমা:</b> <br /> {totalDeposit} টাকা
-        </div>
-        <div style={{background:'#f5f5f5', padding: 20, borderRadius: 12, minWidth: 160}}>
-          <b>⚖️ Meal Rate:</b> <br /> {mealRate} টাকা
-        </div>
-      </div>
+  if (loading) {
+    return (
+      <Box sx={{ mt: 10, textAlign: "center" }}>
+        <CircularProgress color="primary" />
+        <Typography sx={{ mt: 2 }}>ডেটা লোড হচ্ছে...</Typography>
+      </Box>
+    );
+  }
 
-      <div style={{display:'flex', gap: 40, flexWrap:'wrap'}}>
-        <div>
-          <h3>🥧 কে কত মিল খেয়েছে</h3>
-          <ResponsiveContainer width={350} height={300}>
-            <PieChart>
-              <Pie
-                data={mealPieData}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={110}
-                label={({name, value}) => `${name}: ${value}`}
-              >
-                {mealPieData.map((entry, idx) => (
-                  <Cell key={`cell-m-${idx}`} fill={COLORS[idx % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div>
-          <h3>💰 কে কত জমা দিয়েছে</h3>
-          <ResponsiveContainer width={350} height={300}>
-            <PieChart>
-              <Pie
-                data={depositPieData}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={110}
-                label={({name, value}) => `${name}: ${value} টাকা`}
-              >
-                {depositPieData.map((entry, idx) => (
-                  <Cell key={`cell-d-${idx}`} fill={COLORS[idx % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-        <div>
-          <h3>📦 কে কত খরচ করেছে</h3>
-          <ResponsiveContainer width={350} height={300}>
-            <PieChart>
-              <Pie
-                data={costPieData}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={110}
-                label={({name, value}) => `${name}: ${value} টাকা`}
-              >
-                {costPieData.map((entry, idx) => (
-                  <Cell key={`cell-c-${idx}`} fill={COLORS[idx % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
+  return (
+    <Box>
+      <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 700, textAlign: "left" }}>
+        📊 ড্যাশবোর্ড ({currentMonth})
+      </Typography>
+
+      {/* Summary Card গুলো মাঝখানে */}
+      <Grid
+        container
+        spacing={3}
+        justifyContent="center"
+        alignItems="center"
+        sx={{ mb: 2 }}
+      >
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card sx={{ bgcolor: "#e3f2fd", borderRadius: 3, boxShadow: 2 }}>
+            <CardContent>
+              <Typography sx={{ fontSize: 15 }}>👥 মোট সদস্য</Typography>
+              <Typography variant="h5" color="primary">{members.length}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card sx={{ bgcolor: "#e8f5e9", borderRadius: 3, boxShadow: 2 }}>
+            <CardContent>
+              <Typography sx={{ fontSize: 15 }}>🍽️ মোট মিল</Typography>
+              <Typography variant="h5" color="success.main">{totalMeals}</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card sx={{ bgcolor: "#fff8e1", borderRadius: 3, boxShadow: 2 }}>
+            <CardContent>
+              <Typography sx={{ fontSize: 15 }}>💸 মোট বাজার</Typography>
+              <Typography variant="h5" color="warning.main">{totalBazar} টাকা</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card sx={{ bgcolor: "#f1f8e9", borderRadius: 3, boxShadow: 2 }}>
+            <CardContent>
+              <Typography sx={{ fontSize: 15 }}>💰 মোট জমা</Typography>
+              <Typography variant="h5" color="success.main">{totalDeposit} টাকা</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card sx={{ bgcolor: "#fff3e0", borderRadius: 3, boxShadow: 2 }}>
+            <CardContent>
+              <Typography sx={{ fontSize: 15 }}>⚖️ মিল রেট</Typography>
+              <Typography variant="h5" color="secondary">{mealRate} টাকা</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Divider sx={{ my: 3 }} />
+
+      {/* PieChart/Card গুলো মাঝখানে */}
+      <Grid
+        container
+        spacing={3}
+        justifyContent="center"
+        alignItems="flex-start"
+      >
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ borderRadius: 3, boxShadow: 2, p: 2, minWidth: 320 }}>
+            <Typography sx={{ fontWeight: 600, mb: 1, textAlign: "center" }}>
+              🥧 কে কত মিল খেয়েছে
+            </Typography>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={mealPieData}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={95}
+                  label={({ name, value }) => `${name}: ${value}`}
+                >
+                  {mealPieData.map((entry, idx) => (
+                    <Cell key={`cell-m-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ borderRadius: 3, boxShadow: 2, p: 2, minWidth: 320 }}>
+            <Typography sx={{ fontWeight: 600, mb: 1, textAlign: "center" }}>
+              💰 কে কত জমা দিয়েছে
+            </Typography>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={depositPieData}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={95}
+                  label={({ name, value }) => `${name}: ${value} টাকা`}
+                >
+                  {depositPieData.map((entry, idx) => (
+                    <Cell key={`cell-d-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ borderRadius: 3, boxShadow: 2, p: 2, minWidth: 320 }}>
+            <Typography sx={{ fontWeight: 600, mb: 1, textAlign: "center" }}>
+              📦 কে কত খরচ করেছে
+            </Typography>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={costPieData}
+                  dataKey="value"
+                  nameKey="name"
+                  outerRadius={95}
+                  label={({ name, value }) => `${name}: ${value} টাকা`}
+                >
+                  {costPieData.map((entry, idx) => (
+                    <Cell key={`cell-c-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
   );
 }

@@ -19,21 +19,19 @@ import Profile from './pages/Profile';
 import ExpenseEntry from './components/ExpenseEntry';
 import Toast from './components/Toast';
 
-// Firebase Firestore instance
 const db = getFirestore();
 
-// Protected Route (লগইন ছাড়া অ্যাক্সেস করা যাবে না)
+// লগইন ছাড়া অ্যাক্সেস করা যাবে না
 function ProtectedRoute({ children }) {
   const { user } = useFirebaseAuth();
   return user ? children : <Navigate to="/login" />;
 }
 
 function App() {
-  // মেম্বার ডেটা ও টোস্ট (নোটিফিকেশন) স্টেট
   const [members, setMembers] = useState([]);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-  // টোস্ট দেখানোর ফাংশন
+  // টোস্ট দেখাও
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 2200);
@@ -53,7 +51,7 @@ function App() {
     <FirebaseAuthProvider>
       <MonthProvider>
         <Router>
-          {/* টোস্ট নোটিফিকেশন (সব পেজে) */}
+          {/* টোস্ট নোটিফিকেশন */}
           {toast.show && (
             <Toast
               message={toast.message}
@@ -62,10 +60,9 @@ function App() {
             />
           )}
           <Routes>
-            {/* লগইন পেজ */}
+            {/* লগইন */}
             <Route path="/login" element={<SignInSignUp />} />
-
-            {/* মেইন অ্যাপ (সবার জন্য সাইডবার+ড্যাশবোর্ড) */}
+            {/* সাইডবার + ড্যাশবোর্ড structure */}
             <Route
               path="/"
               element={
@@ -74,6 +71,7 @@ function App() {
                 </ProtectedRoute>
               }
             >
+              {/* Dashboard & Page Routes */}
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="members" element={<Members showToast={showToast} />} />
               <Route path="meals" element={<Meals members={members} />} />
@@ -84,10 +82,9 @@ function App() {
               <Route path="rate" element={<MealRate />} />
               <Route path="calc" element={<Report />} />
               <Route path="profile" element={<Profile showToast={showToast} />} />
-              {/* Settings route চাইলে এখানে add করতে পারো */}
+              {/* চাইলে আরও রাউট যোগ করো */}
             </Route>
-
-            {/* যেকোনো ভুল URL দিলে ড্যাশবোর্ডে যাবে */}
+            {/* ভুল URL দিলে Dashboard এ যাবে */}
             <Route path="*" element={<Navigate to="/dashboard" />} />
           </Routes>
         </Router>

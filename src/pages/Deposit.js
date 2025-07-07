@@ -13,6 +13,15 @@ import {
 import { useMonth } from '../context/MonthContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 
+import {
+  Box, Card, CardContent, Typography, Button, TextField, Select, MenuItem, InputLabel, FormControl,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Stack, Tooltip
+} from '@mui/material';
+import SaveIcon from '@mui/icons-material/Save';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+
 const db = getFirestore();
 
 export default function Deposit({ showToast }) {
@@ -23,8 +32,6 @@ export default function Deposit({ showToast }) {
   const [members, setMembers] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const { currentMonth } = useMonth();
-
-  // Custom confirm modal state
   const [confirmState, setConfirmState] = useState({ show: false, id: null, date: '', member: '' });
 
   useEffect(() => {
@@ -47,12 +54,19 @@ export default function Deposit({ showToast }) {
     if (currentMonth) {
       fetchDeposits();
     }
+    // eslint-disable-next-line
   }, [currentMonth]);
+
+  const resetForm = () => {
+    setDate('');
+    setMember('');
+    setAmount('');
+    setEditingId(null);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     if (!date) {
       showToast && showToast('তারিখ সিলেক্ট করুন!', 'error');
       return;
@@ -76,7 +90,6 @@ export default function Deposit({ showToast }) {
           monthId: currentMonth,
         });
         showToast && showToast('জমা আপডেট হয়েছে!', 'success');
-        setEditingId(null);
       } else {
         await addDoc(collection(db, 'deposits'), {
           date,
@@ -86,10 +99,7 @@ export default function Deposit({ showToast }) {
         });
         showToast && showToast('জমা সংরক্ষণ হয়েছে!', 'success');
       }
-
-      setDate('');
-      setMember('');
-      setAmount('');
+      resetForm();
       fetchDeposits();
     } catch (err) {
       showToast && showToast('কিছু সমস্যা হয়েছে, আবার চেষ্টা করুন!', 'error');
@@ -104,7 +114,6 @@ export default function Deposit({ showToast }) {
     showToast && showToast('এডিট মোডে আছেন!', 'info');
   };
 
-  // Custom modal confirm for delete
   const handleDelete = async (id) => {
     await deleteDoc(doc(db, 'deposits', id));
     fetchDeposits();
@@ -112,58 +121,183 @@ export default function Deposit({ showToast }) {
   };
 
   return (
-    <div>
-      <h2>💰 জমা এন্ট্রি</h2>
-      <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
-        <label>তারিখ:</label><br />
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        <br /><br />
-        <label>মেম্বারের নাম:</label><br />
-        <select value={member} onChange={(e) => setMember(e.target.value)}>
-          <option value="">-- সদস্য নির্বাচন করুন --</option>
-          {members.map((m) => (
-            <option key={m.id} value={m.name}>{m.name}</option>
-          ))}
-        </select>
-        <br /><br />
-        <label>টাকার পরিমাণ (৳):</label><br />
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="টাকা"
-        />
-        <br /><br />
+    <Box>
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+        💰 জমা এন্ট্রি
+      </Typography>
+      <Card sx={{ maxWidth: 500, mx: "auto", boxShadow: 3, borderRadius: 4, bgcolor: "#f9fbfd", mb: 4 }}>
+        <CardContent>
+          <form onSubmit={handleSubmit}>
+            <Stack spacing={2}>
+              <TextField
+                label="তারিখ"
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                required
+                sx={{ bgcolor: "#fff" }}
+                size="small"
+              />
+              <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
+                <InputLabel id="member-label">মেম্বার</InputLabel>
+                <Select
+                  labelId="member-label"
+                  value={member}
+                  label="মেম্বার"
+                  onChange={e => setMember(e.target.value)}
+                >
+                  <MenuItem value=""><em>-- সদস্য নির্বাচন করুন --</em></MenuItem>
+                  {members.map((m) => (
+                    <MenuItem key={m.id} value={m.name}>{m.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="টাকার পরিমাণ (৳)"
+                type="number"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                required
+                inputProps={{
+                  min: 1,
+                  step: 1,
+                  style: { textAlign: "center", fontWeight: 700, fontSize: 18 }
+                }}
+                sx={{ bgcolor: "#fff", width: 180 }}
+                size="small"
+              />
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Button
+                  type="submit"
+                  variant="contained"
+                  startIcon={editingId ? <EditIcon /> : <SaveIcon />}
+                  sx={{ px: 4, fontWeight: 600, fontSize: 16, borderRadius: 2 }}
+                >
+                  {editingId ? "আপডেট করুন" : "সেভ করুন"}
+                </Button>
+                {editingId && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<CloseIcon />}
+                    onClick={resetForm}
+                  >
+                    বাতিল
+                  </Button>
+                )}
+              </Stack>
+            </Stack>
+          </form>
+        </CardContent>
+      </Card>
 
-        <button type="submit">{editingId ? '✏️ আপডেট করুন' : '✅ সেভ করুন'}</button>
-      </form>
-
-      <h3>📅 {currentMonth} মাসের জমা তালিকা:</h3>
-      {depositList.length === 0 ? (
-        <p>এই মাসে কোনো জমা নেই।</p>
-      ) : (
-        <ul>
-          {depositList.map((item) => (
-            <li key={item.id}>
-              📅 {item.date} — 👤 {item.member} — 💸 {item.amount} টাকা
-              <button onClick={() => handleEdit(item)} style={{ marginLeft: 10 }}>✏️</button>
-              <button
-                onClick={() =>
-                  setConfirmState({
-                    show: true,
-                    id: item.id,
-                    date: item.date,
-                    member: item.member,
-                  })
-                }
-                style={{ marginLeft: 5, color: 'red' }}
-              >
-                🗑️
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+        📅 {currentMonth} মাসের জমা তালিকা:
+      </Typography>
+      <TableContainer component={Paper} sx={{
+        maxWidth: 700,
+        mx: "auto",
+        boxShadow: 2,
+        borderRadius: 4,
+        mt: 2,
+        background: "#fff"
+      }}>
+        <Table size="medium">
+          <TableHead>
+            <TableRow sx={{ background: "#f3f7fa" }}>
+              <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 120 }}>তারিখ</TableCell>
+              <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 200 }}>মেম্বার</TableCell>
+              <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 160 }}>টাকার পরিমাণ</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 16, width: 120 }}>একশন</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {depositList.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center" sx={{ color: "#888", py: 4, fontSize: 16 }}>
+                  এই মাসে কোনো জমা নেই।
+                </TableCell>
+              </TableRow>
+            ) : (
+              depositList.sort((a, b) => a.date.localeCompare(b.date)).map(item => (
+                <TableRow key={item.id} hover sx={{
+                  transition: "all 0.18s", "&:hover": { background: "#f8fbff" }
+                }}>
+                  <TableCell align="left" sx={{ fontSize: 16 }}>{item.date}</TableCell>
+                  <TableCell align="left" sx={{ fontSize: 16 }}>{item.member}</TableCell>
+                  <TableCell align="left" sx={{ fontWeight: 700, color: "#1976d2", fontSize: 17 }}>
+                    {item.amount} টাকা
+                  </TableCell>
+                  <TableCell align="center">
+                    <Stack direction="row" spacing={1} justifyContent="center">
+                      <Tooltip title="এডিট করুন">
+                        <Button
+                          color="primary"
+                          size="small"
+                          variant="outlined"
+                          startIcon={<EditIcon />}
+                          onClick={() => handleEdit(item)}
+                          sx={{
+                            minWidth: 0,
+                            px: 1.2,
+                            borderRadius: 2,
+                            fontWeight: 600,
+                            border: "1.5px solid #1976d2",
+                            background: "#f7fbff",
+                            '&:hover': {
+                              background: "#e3f0ff",
+                              border: "1.5px solid #0a56a3"
+                            },
+                            boxShadow: 0,
+                            textTransform: "none",
+                            cursor: "pointer"
+                          }}
+                        >
+                          এডিট
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="ডিলিট করুন">
+                        <Button
+                          color="error"
+                          size="small"
+                          variant="outlined"
+                          startIcon={<DeleteIcon />}
+                          onClick={() =>
+                            setConfirmState({
+                              show: true,
+                              id: item.id,
+                              date: item.date,
+                              member: item.member,
+                            })
+                          }
+                          sx={{
+                            minWidth: 0,
+                            px: 1.2,
+                            borderRadius: 2,
+                            fontWeight: 600,
+                            border: "1.5px solid #e53935",
+                            background: "#fff7f7",
+                            '&:hover': {
+                              background: "#ffeaea",
+                              border: "1.5px solid #b71c1c"
+                            },
+                            boxShadow: 0,
+                            textTransform: "none",
+                            cursor: "pointer"
+                          }}
+                        >
+                          ডিলিট
+                        </Button>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Custom Confirm Modal */}
       <ConfirmDialog
@@ -181,7 +315,7 @@ export default function Deposit({ showToast }) {
         }}
         onCancel={() => setConfirmState({ show: false, id: null, date: '', member: '' })}
       />
-    </div>
+    </Box>
   );
 }
 

@@ -9,6 +9,14 @@ import {
 } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
 import ConfirmDialog from '../components/ConfirmDialog';
+import {
+  Box, Card, CardContent, Typography, Grid, Button, IconButton,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Stack, Tooltip
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
+import CloseIcon from '@mui/icons-material/Close';
 
 const db = getFirestore();
 
@@ -97,77 +105,217 @@ export default function Meals({ showToast }) {
   };
 
   return (
-    <div>
-      <h2>📅 সেভকৃত মিল তালিকা ({currentMonth || "নির্বাচিত নয়"})</h2>
-      {savedMeals.length === 0 && <p>এই মাসে এখনও কোন মিল এন্ট্রি নেই।</p>}
+    <Box>
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+        📅 সেভকৃত মিল তালিকা ({currentMonth || "নির্বাচিত নয়"})
+      </Typography>
 
-      {savedMeals
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .map(meal => (
-          <div key={meal.id} style={{ marginBottom: 20, borderBottom: "1px solid #ccc", paddingBottom: 10 }}>
-            <strong>📅 {meal.date}</strong>
-            {editingMealId === meal.id ? (
-              <div style={{ marginLeft: 20 }}>
-                {members.map(m => (
-                  <div key={m.id}>
-                    👤 <strong>{m.name}</strong><br />
-                    নাস্তা: <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={editData[m.id]?.breakfast || ''}
-                      onChange={e => handleEditChange(m.id, 'breakfast', e.target.value)}
-                      style={{ width: 50 }}
-                    />
-                    দুপুর: <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={editData[m.id]?.lunch || ''}
-                      onChange={e => handleEditChange(m.id, 'lunch', e.target.value)}
-                      style={{ width: 50 }}
-                    />
-                    রাত: <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={editData[m.id]?.dinner || ''}
-                      onChange={e => handleEditChange(m.id, 'dinner', e.target.value)}
-                      style={{ width: 50 }}
-                    />
-                    <br /><br />
-                  </div>
-                ))}
-                {error && (
-                  <div style={{
-                    color: 'red',
-                    marginBottom: 10,
-                    fontWeight: '500',
-                    fontSize: '1.08em'
-                  }}>
-                    ⚠️ {error}
-                  </div>
-                )}
-                <button onClick={handleSaveEdit}>✅ আপডেট করুন</button>{' '}
-                <button onClick={() => { setEditingMealId(null); setEditData({}); setError(''); }}>❌ বাতিল</button>
-              </div>
-            ) : (
-              <>
-                <ul style={{ marginLeft: 20 }}>
-                  {Object.entries(meal.meals).map(([mid, mealObj]) => (
-                    <li key={mid}>
-                      👤 {getMemberName(mid)} — 🍽️ নাস্তা: {mealObj.breakfast || 0}, দুপুর: {mealObj.lunch || 0}, রাত: {mealObj.dinner || 0}
-                    </li>
-                  ))}
-                </ul>
-                <div style={{ marginTop: 5 }}>
-                  <button onClick={() => handleEdit(meal)} style={{ marginRight: 10 }}>✏️ Edit</button>
-                  <button onClick={() => setConfirmState({ show: true, id: meal.id, date: meal.date })}>🗑️ Delete</button>
-                </div>
-              </>
-            )}
-          </div>
-        ))}
+      {savedMeals.length === 0 && (
+        <Typography sx={{ mb: 2, color: "#777" }}>
+          এই মাসে এখনও কোন মিল এন্ট্রি নেই।
+        </Typography>
+      )}
+
+      <Grid container spacing={3} alignItems="stretch">
+        {savedMeals
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map(meal => (
+            <Grid
+              item
+              xs={12}
+              md={6}
+              lg={4}
+              key={meal.id}
+              sx={{ display: "flex" }}
+            >
+              <Card
+                sx={{
+                  borderRadius: 4,
+                  boxShadow: 3,
+                  bgcolor: "#f9fbfd",
+                  minHeight: 265, // এখানে height/minHeight adjust করে দেখতে পারো
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <CardContent
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "flex-start",
+                    pb: "16px !important"
+                  }}
+                >
+                  {/* Top part */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      mb: 1.5,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 600, letterSpacing: 1 }}>
+                      <span role="img" aria-label="calendar">📅</span> {meal.date}
+                    </Typography>
+                    {editingMealId !== meal.id && (
+                      <Stack direction="row" spacing={1.2}>
+                        <Tooltip title="এডিট">
+                          <IconButton
+                            color="primary"
+                            sx={{
+                              bgcolor: "#e3f0ff",
+                              "&:hover": { bgcolor: "#b4d5fa" }
+                            }}
+                            onClick={() => handleEdit(meal)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="ডিলিট">
+                          <IconButton
+                            color="error"
+                            sx={{
+                              bgcolor: "#fff0f0",
+                              "&:hover": { bgcolor: "#fddada" }
+                            }}
+                            onClick={() =>
+                              setConfirmState({ show: true, id: meal.id, date: meal.date })
+                            }
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    )}
+                  </Box>
+
+                  {/* Table or Edit Form */}
+                  <Box sx={{ flex: 1 }}>
+                    {editingMealId === meal.id ? (
+                      <>
+                        <TableContainer component={Paper} sx={{ boxShadow: 0, mb: 1 }}>
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>সদস্য</TableCell>
+                                <TableCell align="center">নাস্তা</TableCell>
+                                <TableCell align="center">দুপুর</TableCell>
+                                <TableCell align="center">রাত</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {members.map(m => (
+                                <TableRow key={m.id}>
+                                  <TableCell>
+                                    <b>{m.name}</b>
+                                  </TableCell>
+                                  <TableCell align="center">
+                                    <TextField
+                                      size="small"
+                                      type="number"
+                                      inputProps={{ step: "0.5", min: "0" }}
+                                      value={editData[m.id]?.breakfast || ''}
+                                      onChange={e =>
+                                        handleEditChange(m.id, 'breakfast', e.target.value)
+                                      }
+                                      sx={{ width: 60 }}
+                                    />
+                                  </TableCell>
+                                  <TableCell align="center">
+                                    <TextField
+                                      size="small"
+                                      type="number"
+                                      inputProps={{ step: "0.5", min: "0" }}
+                                      value={editData[m.id]?.lunch || ''}
+                                      onChange={e =>
+                                        handleEditChange(m.id, 'lunch', e.target.value)
+                                      }
+                                      sx={{ width: 60 }}
+                                    />
+                                  </TableCell>
+                                  <TableCell align="center">
+                                    <TextField
+                                      size="small"
+                                      type="number"
+                                      inputProps={{ step: "0.5", min: "0" }}
+                                      value={editData[m.id]?.dinner || ''}
+                                      onChange={e =>
+                                        handleEditChange(m.id, 'dinner', e.target.value)
+                                      }
+                                      sx={{ width: 60 }}
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                        {error && (
+                          <Typography color="error" sx={{ mb: 1, fontWeight: 500 }}>
+                            ⚠️ {error}
+                          </Typography>
+                        )}
+                        <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+                          <Button
+                            variant="contained"
+                            color="success"
+                            size="small"
+                            startIcon={<SaveIcon />}
+                            onClick={handleSaveEdit}
+                          >
+                            আপডেট করুন
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            startIcon={<CloseIcon />}
+                            onClick={() => {
+                              setEditingMealId(null);
+                              setEditData({});
+                              setError('');
+                            }}
+                          >
+                            বাতিল
+                          </Button>
+                        </Stack>
+                      </>
+                    ) : (
+                      <TableContainer component={Paper} sx={{ boxShadow: 0 }}>
+                        <Table>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>সদস্য</TableCell>
+                              <TableCell align="center">নাস্তা</TableCell>
+                              <TableCell align="center">দুপুর</TableCell>
+                              <TableCell align="center">রাত</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {Object.entries(meal.meals).map(([mid, mealObj]) => (
+                              <TableRow key={mid}>
+                                <TableCell>
+                                  <b>{getMemberName(mid)}</b>
+                                </TableCell>
+                                <TableCell align="center">{mealObj.breakfast || 0}</TableCell>
+                                <TableCell align="center">{mealObj.lunch || 0}</TableCell>
+                                <TableCell align="center">{mealObj.dinner || 0}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+      </Grid>
 
       {/* Custom Confirm Modal */}
       <ConfirmDialog
@@ -179,6 +327,6 @@ export default function Meals({ showToast }) {
         }}
         onCancel={() => setConfirmState({ show: false, id: null, date: "" })}
       />
-    </div>
+    </Box>
   );
 }
