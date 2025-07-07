@@ -38,6 +38,16 @@ export default function MessNameBar() {
       letterSpacing: '1px',
       gap: '10px'
     }}>
+      {/* BAM PASHE Mess Name */}
+      <span style={{
+        fontSize: '1rem',
+        color: '#33A8FF', // সুন্দর ব্লু, চাইলে '#43a047' (সবুজ) ও দিতে পারো
+        fontWeight: 500,
+        marginRight: '4px',
+        letterSpacing: '0.07em'
+      }}>
+        Mess Name&nbsp;–
+      </span>
       {editMode ? (
         <>
           <input

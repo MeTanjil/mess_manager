@@ -6,9 +6,12 @@ import {
   getDocs,
   updateDoc,
   deleteDoc,
-  doc
+  doc,
+  writeBatch,
+  query,
+  where
 } from 'firebase/firestore';
-import ConfirmDialog from '../components/ConfirmDialog'; // পাথ ঠিক থাকলে OK
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const db = getFirestore();
 
@@ -16,7 +19,6 @@ export default function Members({ showToast }) {
   const [members, setMembers] = useState([]);
   const [name, setName] = useState('');
   const [editId, setEditId] = useState(null);
-  // Custom Confirm Dialog state
   const [confirmState, setConfirmState] = useState({ show: false, id: null, name: "" });
 
   // সদস্য লোড
@@ -57,50 +59,60 @@ export default function Members({ showToast }) {
     showToast && showToast("এডিট মোডে আছেন!", "info");
   };
 
-  // **Cascade Delete + Meal Doc Remove if empty**
+  // **Cascade Batch Delete: Member + Meals + Bazar + Deposit + Expenses**
   const handleDelete = async (id) => {
     const member = members.find(m => m.id === id);
     if (!member) return;
 
-    // ১. মেম্বার ডিলিট
+    // ১. Member ডিলিট (direct)
     await deleteDoc(doc(db, 'members', id));
 
-    // ২. Meal Entry থেকে memberId remove (meals[id] ডিলিট), আর কেউ না থাকলে meal doc ডিলিট
+    // ২. Meals: memberId remove (batch update) + ফাঁকা হলে doc delete (batch)
     const mealsSnap = await getDocs(collection(db, 'meals'));
-    for (const mealDoc of mealsSnap.docs) {
+    const mealsBatch = writeBatch(db);
+    mealsSnap.forEach(mealDoc => {
       const mealData = mealDoc.data();
       if (mealData.meals && mealData.meals[id]) {
-        const updatedMeals = { ...mealData.meals };
+        let updatedMeals = { ...mealData.meals };
         delete updatedMeals[id];
-
         if (Object.keys(updatedMeals).length === 0) {
-          // meal doc ফাঁকা, পুরো doc ডিলিট
-          await deleteDoc(doc(db, 'meals', mealDoc.id));
+          mealsBatch.delete(doc(db, 'meals', mealDoc.id));
         } else {
-          // অন্য মেম্বার meal আছে, শুধু update
-          await updateDoc(doc(db, 'meals', mealDoc.id), { meals: updatedMeals });
+          mealsBatch.update(doc(db, 'meals', mealDoc.id), { meals: updatedMeals });
         }
       }
-    }
+    });
+    await mealsBatch.commit();
 
-    // ৩. Bazar-এ member-এর entry ডিলিট (person === name)
-    const bazarSnap = await getDocs(collection(db, 'bazar'));
-    for (const entry of bazarSnap.docs) {
-      if (entry.data().person === member.name) {
-        await deleteDoc(doc(db, 'bazar', entry.id));
-      }
-    }
+    // ৩. Bazar: person === member.name (batch delete)
+    const bazarQuery = query(collection(db, 'bazar'), where('person', '==', member.name));
+    const bazarSnap = await getDocs(bazarQuery);
+    const bazarBatch = writeBatch(db);
+    bazarSnap.forEach(entry => {
+      bazarBatch.delete(doc(db, 'bazar', entry.id));
+    });
+    await bazarBatch.commit();
 
-    // ৪. Deposits-এ member-এর entry ডিলিট (member === name)
-    const depositSnap = await getDocs(collection(db, 'deposits'));
-    for (const entry of depositSnap.docs) {
-      if (entry.data().member === member.name) {
-        await deleteDoc(doc(db, 'deposits', entry.id));
-      }
-    }
+    // ৪. Deposits: member === member.name (batch delete)
+    const depositQuery = query(collection(db, 'deposits'), where('member', '==', member.name));
+    const depositSnap = await getDocs(depositQuery);
+    const depositBatch = writeBatch(db);
+    depositSnap.forEach(entry => {
+      depositBatch.delete(doc(db, 'deposits', entry.id));
+    });
+    await depositBatch.commit();
+
+    // ৫. Expenses: payerId === member.id (batch delete)
+    const expenseQuery = query(collection(db, 'expenses'), where('payerId', '==', member.id));
+    const expenseSnap = await getDocs(expenseQuery);
+    const expenseBatch = writeBatch(db);
+    expenseSnap.forEach(entry => {
+      expenseBatch.delete(doc(db, 'expenses', entry.id));
+    });
+    await expenseBatch.commit();
 
     fetchMembers();
-    showToast && showToast("সদস্য এবং সংশ্লিষ্ট সব হিসাব ডিলিট হয়েছে!", "success");
+    showToast && showToast("সদস্য এবং সংশ্লিষ্ট সব হিসাব দ্রুত ডিলিট হয়েছে!", "success");
   };
 
   return (
@@ -129,7 +141,12 @@ export default function Members({ showToast }) {
       {/* Custom Delete Confirm Modal */}
       <ConfirmDialog
         show={confirmState.show}
-        message={`${confirmState.name} - এই সদস্য এবং তার সব হিসাব ডিলিট করবেন?`}
+        message={
+          <span>
+            {confirmState.name} - এই সদস্য এবং তার সব হিসাব দ্রুত ডিলিট করবেন?<br />
+            <span style={{ color: 'red' }}>সতর্কতা: সব meal, expense, bazar, deposit ডিলিট হবে।</span>
+          </span>
+        }
         onConfirm={async () => {
           await handleDelete(confirmState.id);
           setConfirmState({ show: false, id: null, name: "" });

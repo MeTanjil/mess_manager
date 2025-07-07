@@ -8,7 +8,7 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
-import ConfirmDialog from '../components/ConfirmDialog'; // ✅ import
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const db = getFirestore();
 
@@ -19,8 +19,13 @@ export default function Meals({ showToast }) {
   const [editData, setEditData] = useState({});
   const { currentMonth } = useMonth();
   const [error, setError] = useState('');
-  // ConfirmDialog state
   const [confirmState, setConfirmState] = useState({ show: false, id: null, date: "" });
+
+  // Helper: id to name
+  const getMemberName = (id) => {
+    const m = members.find(m => m.id === id);
+    return m ? m.name : id;
+  };
 
   // সদস্য লোড
   useEffect(() => {
@@ -69,7 +74,6 @@ export default function Meals({ showToast }) {
 
   // Edit সেভ
   const handleSaveEdit = async () => {
-    // কমপক্ষে একজন সদস্যের অন্তত একবেলা meal থাকতে হবে
     const mealEntered = Object.values(editData).some(
       m => Number(m.breakfast) > 0 || Number(m.lunch) > 0 || Number(m.dinner) > 0
     );
@@ -83,7 +87,6 @@ export default function Meals({ showToast }) {
     await updateDoc(docRef, {
       meals: editData
     });
-    // আপডেট UI
     setSavedMeals(prev =>
       prev.map(m => m.id === editingMealId ? { ...m, meals: editData } : m)
     );
@@ -151,14 +154,11 @@ export default function Meals({ showToast }) {
             ) : (
               <>
                 <ul style={{ marginLeft: 20 }}>
-                  {Object.entries(meal.meals).map(([mid, mealObj]) => {
-                    const memberName = members.find(mem => mem.id === mid)?.name || mid;
-                    return (
-                      <li key={mid}>
-                        👤 {memberName} — 🍽️ নাস্তা: {mealObj.breakfast || 0}, দুপুর: {mealObj.lunch || 0}, রাত: {mealObj.dinner || 0}
-                      </li>
-                    );
-                  })}
+                  {Object.entries(meal.meals).map(([mid, mealObj]) => (
+                    <li key={mid}>
+                      👤 {getMemberName(mid)} — 🍽️ নাস্তা: {mealObj.breakfast || 0}, দুপুর: {mealObj.lunch || 0}, রাত: {mealObj.dinner || 0}
+                    </li>
+                  ))}
                 </ul>
                 <div style={{ marginTop: 5 }}>
                   <button onClick={() => handleEdit(meal)} style={{ marginRight: 10 }}>✏️ Edit</button>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getFirestore, collection, addDoc, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, query, where, getDocs, limit } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
 
 const db = getFirestore();
@@ -38,16 +38,20 @@ export default function MealEntry({ members, showToast }) {
     }
 
     try {
-      // আগের meal এন্ট্রি চেক করুন
-      const snapshot = await getDocs(collection(db, 'meals'));
-      const alreadyExists = snapshot.docs.some(doc => doc.data().date === date);
-
-      if (alreadyExists) {
+      // আগের meal এন্ট্রি চেক: শুধু ওই তারিখের জন্য, একটাই doc, super fast!
+      const mealQuery = query(
+        collection(db, 'meals'),
+        where('date', '==', date),
+        where('monthId', '==', currentMonth),
+        limit(1)
+      );
+      const snapshot = await getDocs(mealQuery);
+      if (!snapshot.empty) {
         showToast("এই তারিখে ইতিমধ্যেই meal entry রয়েছে!", "warning");
         return;
       }
 
-      // নতুন এন্ট্রি যুক্ত করুন
+      // নতুন meal entry
       await addDoc(collection(db, 'meals'), {
         date,
         monthId: currentMonth,

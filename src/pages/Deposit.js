@@ -6,10 +6,12 @@ import {
   getDocs,
   deleteDoc,
   doc,
-  updateDoc
+  updateDoc,
+  query,
+  where
 } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
-import ConfirmDialog from '../components/ConfirmDialog'; // ✅ import
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const db = getFirestore();
 
@@ -181,4 +183,14 @@ export default function Deposit({ showToast }) {
       />
     </div>
   );
+}
+
+// 🚀 Member Delete করলে তার সব deposit ডিলিট করার utility function:
+export async function deleteMemberDeposits(memberName) {
+  const db = getFirestore();
+  const depositQuery = query(collection(db, 'deposits'), where('member', '==', memberName));
+  const depositSnap = await getDocs(depositQuery);
+  for (const docu of depositSnap.docs) {
+    await deleteDoc(doc(db, 'deposits', docu.id));
+  }
 }

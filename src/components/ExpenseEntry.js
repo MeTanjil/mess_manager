@@ -12,7 +12,7 @@ export default function ExpenseEntry({ members, showToast }) {
   const [type, setType] = useState('shared');
   const [payerId, setPayerId] = useState('');
   const [expenses, setExpenses] = useState([]);
-  const [editId, setEditId] = useState(null); // যদি এডিট মোড হয়
+  const [editId, setEditId] = useState(null);
 
   // খরচের তালিকা লোড
   const fetchExpenses = async () => {
@@ -36,8 +36,9 @@ export default function ExpenseEntry({ members, showToast }) {
       return;
     }
 
-    if (type === 'individual' && !payerId) {
-      showToast("Individual খরচের জন্য সদস্য সিলেক্ট করুন!", "error");
+    // এখন দুই type-ই payerId লাগবে
+    if (!payerId) {
+      showToast("কে টাকা দিয়েছে সেটি নির্বাচন করুন!", "error");
       return;
     }
 
@@ -49,7 +50,7 @@ export default function ExpenseEntry({ members, showToast }) {
           amount: Number(amount),
           purpose,
           type,
-          payerId: type === 'individual' ? payerId : null,
+          payerId,
           monthId: currentMonth,
         });
         showToast("খরচ আপডেট হয়েছে!", "success");
@@ -60,7 +61,7 @@ export default function ExpenseEntry({ members, showToast }) {
           amount: Number(amount),
           purpose,
           type,
-          payerId: type === 'individual' ? payerId : null,
+          payerId,
           monthId: currentMonth,
         });
         showToast("খরচ সংরক্ষণ হয়েছে!", "success");
@@ -105,7 +106,7 @@ export default function ExpenseEntry({ members, showToast }) {
     setAmount(exp.amount);
     setPurpose(exp.purpose);
     setType(exp.type);
-    setPayerId(exp.type === 'individual' ? exp.payerId : '');
+    setPayerId(exp.payerId || '');
   };
 
   // Cancel edit
@@ -141,18 +142,16 @@ export default function ExpenseEntry({ members, showToast }) {
             <option value="individual">Individual</option>
           </select>
         </div>
-        {type === 'individual' && (
-          <div>
-            <label>সদস্য:</label>
-            <select value={payerId} onChange={e => setPayerId(e.target.value)}>
-              <option value="">সদস্য নির্বাচন করুন</option>
-              {members.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
+        {/* এখন দুই type-ই payerId চাইবে */}
+        <div>
+          <label>কে টাকা দিল?</label>
+          <select value={payerId} onChange={e => setPayerId(e.target.value)}>
+            <option value="">সদস্য নির্বাচন করুন</option>
+            {members.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
         <button type="submit" style={{ marginTop: 10 }}>
           {editId ? "✏️ আপডেট করুন" : "✅ সংরক্ষণ করুন"}
         </button>
@@ -172,7 +171,7 @@ export default function ExpenseEntry({ members, showToast }) {
               <th style={{ border: '1px solid #bbb', padding: '7px' }}>তারিখ</th>
               <th style={{ border: '1px solid #bbb', padding: '7px' }}>পরিমাণ</th>
               <th style={{ border: '1px solid #bbb', padding: '7px' }}>ধরন</th>
-              <th style={{ border: '1px solid #bbb', padding: '7px' }}>সদস্য</th>
+              <th style={{ border: '1px solid #bbb', padding: '7px' }}>কে দিল</th>
               <th style={{ border: '1px solid #bbb', padding: '7px' }}>কারণ</th>
               <th style={{ border: '1px solid #bbb', padding: '7px' }}>অ্যাকশন</th>
             </tr>
@@ -193,7 +192,7 @@ export default function ExpenseEntry({ members, showToast }) {
                     {exp.type === 'shared' ? 'Shared' : 'Individual'}
                   </td>
                   <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'center' }}>
-                    {exp.type === 'individual' ? getMemberName(exp.payerId) : '—'}
+                    {getMemberName(exp.payerId)}
                   </td>
                   <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'center' }}>{exp.purpose}</td>
                   <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'center' }}>
@@ -218,4 +217,15 @@ export default function ExpenseEntry({ members, showToast }) {
       </div>
     </div>
   );
+}
+
+// ===== Member Delete করলে তার সব Expense অটো ডিলিট করার ফাংশন =====
+
+export async function deleteMemberExpenses(memberId) {
+  const db = getFirestore();
+  const expenseQuery = query(collection(db, 'expenses'), where('payerId', '==', memberId));
+  const expenseSnap = await getDocs(expenseQuery);
+  for (const docu of expenseSnap.docs) {
+    await deleteDoc(doc(db, 'expenses', docu.id));
+  }
 }
