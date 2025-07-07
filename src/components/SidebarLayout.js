@@ -37,18 +37,17 @@ export default function SidebarLayout() {
     return months;
   };
 
-  // আগের navItems array এর সাথে নতুন খরচ এন্ট্রি লিংক যোগ করা হল
+  // Settings বাদ দিয়ে navItems
   const navItems = [
     { path: '/dashboard', label: 'ড্যাশবোর্ড' },
     { path: '/members', label: 'মেম্বার' },
     { path: '/meals', label: 'মিল' },
     { path: '/meal-entry', label: 'মিল এন্ট্রি' },
-    { path: '/expense-entry', label: 'খরচ এন্ট্রি' }, // <-- New Expense Entry link added here!
+    { path: '/expense-entry', label: 'খরচ এন্ট্রি' },
     { path: '/bazar', label: 'বাজার' },
     { path: '/deposit', label: 'জমা' },
     { path: '/rate', label: 'মিল রেট' },
     { path: '/calc', label: 'রিপোর্ট' },
-    { path: '/settings', label: 'সেটিংস' },
     { path: '/profile', label: '👤 প্রোফাইল' },
   ];
 
@@ -66,7 +65,7 @@ export default function SidebarLayout() {
         }}
       >
         <div>
-          {/* 🔽 User Profile (top of sidebar) */}
+          {/* 🔽 ইউজার প্রোফাইল */}
           {user && (
             <div style={{
               display: 'flex',
@@ -88,7 +87,9 @@ export default function SidebarLayout() {
                 />
               ) : (
                 <div style={{
-                  width: 36, height: 36, borderRadius: '50%',
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
                   background: '#b3b3b3',
                   textAlign: 'center',
                   lineHeight: '36px',
@@ -110,8 +111,11 @@ export default function SidebarLayout() {
             </div>
           )}
 
+          {/* 🔽 Sidebar Main */}
           <h3 style={{ marginBottom: 5 }}>Mess Manager</h3>
           <small style={{ color: '#555' }}>Created by Tanjil</small>
+
+          {/* 🔽 মাস নির্বাচন */}
           <div style={{ margin: '20px 0' }}>
             <label>🌙 মাস নির্বাচন:</label>
             <select
@@ -131,6 +135,8 @@ export default function SidebarLayout() {
               ))}
             </select>
           </div>
+
+          {/* 🔽 Navigation Links */}
           {navItems.map((item) => (
             <div key={item.path}>
               <Link
@@ -152,6 +158,8 @@ export default function SidebarLayout() {
             </div>
           ))}
         </div>
+
+        {/* 🔽 Logout Button */}
         <button
           onClick={signout}
           style={{
@@ -168,6 +176,8 @@ export default function SidebarLayout() {
           🚪 লগ আউট
         </button>
       </nav>
+
+      {/* 🔽 Main Page Content */}
       <main style={{ flex: 1, padding: 20 }}>
         <MessNameBar />
         <Outlet />

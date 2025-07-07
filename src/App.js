@@ -16,7 +16,7 @@ import Deposit from './pages/Deposit';
 import MealRate from './pages/MealRate';
 import Report from './pages/Report';
 import Profile from './pages/Profile';
-import ExpenseEntry from './components/ExpenseEntry'; // ✅
+import ExpenseEntry from './components/ExpenseEntry';
 import Toast from './components/Toast';
 
 const db = getFirestore();
@@ -60,7 +60,7 @@ function App() {
             {/* Login page route */}
             <Route path="/login" element={<SignInSignUp />} />
 
-            {/* Main app routes, যেগুলো শুধু লগইন ইউজার দেখতে পাবে */}
+            {/* Main app routes */}
             <Route
               path="/"
               element={
@@ -73,15 +73,16 @@ function App() {
               <Route path="members" element={<Members showToast={showToast} />} />
               <Route path="meals" element={<Meals members={members} />} />
               <Route path="meal-entry" element={<MealEntry members={members} showToast={showToast} />} />
-              <Route path="expense-entry" element={<ExpenseEntry members={members} showToast={showToast} />} /> {/* ✅ খরচ এন্ট্রি */}
+              <Route path="expense-entry" element={<ExpenseEntry members={members} showToast={showToast} />} />
               <Route path="bazar" element={<Bazar showToast={showToast} />} />
               <Route path="deposit" element={<Deposit showToast={showToast} />} />
               <Route path="rate" element={<MealRate />} />
               <Route path="calc" element={<Report />} />
               <Route path="profile" element={<Profile showToast={showToast} />} />
+              {/* Settings রাউট বাদ */}
             </Route>
 
-            {/* অন্য কিছু path দিলে ড্যাশবোর্ডে যাবে */}
+            {/* অন্য কিছু দিলে রিডাইরেক্ট */}
             <Route path="*" element={<Navigate to="/dashboard" />} />
           </Routes>
         </Router>
