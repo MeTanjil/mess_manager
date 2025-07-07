@@ -19,22 +19,27 @@ import Profile from './pages/Profile';
 import ExpenseEntry from './components/ExpenseEntry';
 import Toast from './components/Toast';
 
+// Firebase Firestore instance
 const db = getFirestore();
 
+// Protected Route (লগইন ছাড়া অ্যাক্সেস করা যাবে না)
 function ProtectedRoute({ children }) {
   const { user } = useFirebaseAuth();
   return user ? children : <Navigate to="/login" />;
 }
 
 function App() {
+  // মেম্বার ডেটা ও টোস্ট (নোটিফিকেশন) স্টেট
   const [members, setMembers] = useState([]);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
+  // টোস্ট দেখানোর ফাংশন
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 2200);
   };
 
+  // Firestore থেকে মেম্বার লোড
   useEffect(() => {
     const fetchMembers = async () => {
       const snapshot = await getDocs(collection(db, 'members'));
@@ -48,7 +53,7 @@ function App() {
     <FirebaseAuthProvider>
       <MonthProvider>
         <Router>
-          {/* Toast Notification (all pages) */}
+          {/* টোস্ট নোটিফিকেশন (সব পেজে) */}
           {toast.show && (
             <Toast
               message={toast.message}
@@ -57,10 +62,10 @@ function App() {
             />
           )}
           <Routes>
-            {/* Login page route */}
+            {/* লগইন পেজ */}
             <Route path="/login" element={<SignInSignUp />} />
 
-            {/* Main app routes */}
+            {/* মেইন অ্যাপ (সবার জন্য সাইডবার+ড্যাশবোর্ড) */}
             <Route
               path="/"
               element={
@@ -79,10 +84,10 @@ function App() {
               <Route path="rate" element={<MealRate />} />
               <Route path="calc" element={<Report />} />
               <Route path="profile" element={<Profile showToast={showToast} />} />
-              {/* Settings রাউট বাদ */}
+              {/* Settings route চাইলে এখানে add করতে পারো */}
             </Route>
 
-            {/* অন্য কিছু দিলে রিডাইরেক্ট */}
+            {/* যেকোনো ভুল URL দিলে ড্যাশবোর্ডে যাবে */}
             <Route path="*" element={<Navigate to="/dashboard" />} />
           </Routes>
         </Router>
