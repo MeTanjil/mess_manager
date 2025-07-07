@@ -1,28 +1,50 @@
 import React, { useEffect, useState } from 'react';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
+import { useFirebaseAuth } from '../FirebaseAuthContext'; // ← যদি auth context থাকে
+
+const db = getFirestore();
 
 export default function MessNameBar() {
   const { currentMonth } = useMonth();
-  const [messNames, setMessNames] = useState({});
+  const { user } = useFirebaseAuth(); // ← ইউজার অবজেক্ট (uid)
+  const [messName, setMessName] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
+  // 🔄 Mess Name load
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem('messNames') || '{}');
-    setMessNames(data);
-  }, []);
+    if (!user) return; // user না থাকলে ফাঁকা রাখো
+    const fetchMessName = async () => {
+      const docRef = doc(db, 'messNames', `${user.uid}_${currentMonth}`);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setMessName(docSnap.data().messName);
+      } else {
+        setMessName('');
+      }
+    };
+    fetchMessName();
+  }, [currentMonth, user]);
 
+  // Input always synced with messName
   useEffect(() => {
-    setInputValue(messNames[currentMonth] || '');
-  }, [currentMonth, messNames]);
+    setInputValue(messName || '');
+  }, [messName]);
 
+  // ✏️ Edit mode on
   const handleEdit = () => setEditMode(true);
   const handleCancel = () => setEditMode(false);
 
-  const handleSave = () => {
-    const newMessNames = { ...messNames, [currentMonth]: inputValue.trim() };
-    setMessNames(newMessNames);
-    localStorage.setItem('messNames', JSON.stringify(newMessNames));
+  // ✅ Save button
+  const handleSave = async () => {
+    if (!user) return;
+    const value = inputValue.trim();
+    await setDoc(
+      doc(db, 'messNames', `${user.uid}_${currentMonth}`),
+      { messName: value, userId: user.uid, month: currentMonth, updatedAt: new Date() }
+    );
+    setMessName(value);
     setEditMode(false);
   };
 
@@ -38,10 +60,9 @@ export default function MessNameBar() {
       letterSpacing: '1px',
       gap: '10px'
     }}>
-      {/* BAM PASHE Mess Name */}
       <span style={{
         fontSize: '1rem',
-        color: '#33A8FF', // সুন্দর ব্লু, চাইলে '#43a047' (সবুজ) ও দিতে পারো
+        color: '#33A8FF',
         fontWeight: 500,
         marginRight: '4px',
         letterSpacing: '0.07em'
@@ -64,7 +85,7 @@ export default function MessNameBar() {
       ) : (
         <>
           <span>
-            {messNames[currentMonth] ? messNames[currentMonth] : "Mess Manager"}
+            {messName ? messName : "Mess Manager"}
           </span>
           <button
             onClick={handleEdit}
