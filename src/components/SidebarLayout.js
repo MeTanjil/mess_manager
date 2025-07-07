@@ -9,7 +9,7 @@ export default function SidebarLayout() {
   const { signout, user } = useFirebaseAuth();
   const { currentMonth, setCurrentMonth } = useMonth();
 
-  // মাস ডিফল্ট সেট
+  // মাস ডিফল্ট সেট করা
   useEffect(() => {
     if (!currentMonth) {
       const now = new Date();
@@ -18,7 +18,7 @@ export default function SidebarLayout() {
     }
   }, [currentMonth, setCurrentMonth]);
 
-  // মাস লিস্ট
+  // 2024 থেকে শুরু করে আগামী ২ বছর পর্যন্ত মাস তৈরি
   const generateAllMonths = () => {
     const months = [];
     const startYear = 2024;
@@ -37,6 +37,7 @@ export default function SidebarLayout() {
     return months;
   };
 
+  // Settings বাদ দিয়ে navItems
   const navItems = [
     { path: '/dashboard', label: 'ড্যাশবোর্ড' },
     { path: '/members', label: 'মেম্বার' },
@@ -51,77 +52,133 @@ export default function SidebarLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#f5f5f5]">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-lg flex flex-col justify-between p-4">
+    <div style={{ display: 'flex' }}>
+      <nav
+        style={{
+          width: 220,
+          background: '#f0f0f0',
+          padding: 20,
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+        }}
+      >
         <div>
-          {/* ইউজার প্রোফাইল */}
+          {/* 🔽 ইউজার প্রোফাইল */}
           {user && (
-            <div className="flex items-center gap-3 mb-5 bg-gray-100 rounded-xl p-3 shadow">
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: 18,
+              background: '#fff',
+              borderRadius: 8,
+              padding: '8px 8px 8px 2px',
+              boxShadow: '0 1px 3px #eee'
+            }}>
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
                   alt="profile"
-                  className="w-10 h-10 rounded-full"
+                  width={36}
+                  height={36}
+                  style={{ borderRadius: '50%' }}
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-lg">
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: '#b3b3b3',
+                  textAlign: 'center',
+                  lineHeight: '36px',
+                  fontWeight: 'bold',
+                  fontSize: '1.2em',
+                  color: '#fff'
+                }}>
                   {(user.displayName?.[0] || user.email?.[0] || 'U').toUpperCase()}
                 </div>
               )}
               <div>
-                <div className="font-semibold text-base">{user.displayName || "নাম নেই"}</div>
-                <div className="text-xs text-gray-600">{user.email}</div>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>
+                  {user.displayName || "No Name"}
+                </div>
+                <div style={{ fontSize: 13, color: '#444' }}>
+                  {user.email}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Mess Manager Brand */}
-          <h2 className="font-bold text-xl text-[#1976d2] mb-0">Mess Manager</h2>
-          <small className="text-gray-500">Created by Tanjil</small>
+          {/* 🔽 Sidebar Main */}
+          <h3 style={{ marginBottom: 5 }}>Mess Manager</h3>
+          <small style={{ color: '#555' }}>Created by Tanjil</small>
 
-          {/* মাস নির্বাচন */}
-          <div className="my-5">
-            <label className="font-medium text-sm">🌙 মাস নির্বাচন:</label>
+          {/* 🔽 মাস নির্বাচন */}
+          <div style={{ margin: '20px 0' }}>
+            <label>🌙 মাস নির্বাচন:</label>
             <select
               value={currentMonth}
               onChange={(e) => setCurrentMonth(e.target.value)}
-              className="block w-full mt-2 px-2 py-1 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white"
+              style={{
+                width: '100%',
+                padding: '5px',
+                marginTop: '5px',
+                fontSize: '14px',
+              }}
             >
               {generateAllMonths().map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
               ))}
             </select>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex flex-col gap-1 mt-2">
-            {navItems.map((item) => (
+          {/* 🔽 Navigation Links */}
+          {navItems.map((item) => (
+            <div key={item.path}>
               <Link
-                key={item.path}
                 to={item.path}
-                className={`
-                  px-3 py-2 rounded-lg font-medium text-[15px]
-                  ${location.pathname === item.path
-                    ? 'bg-blue-100 text-[#1976d2] font-bold'
-                    : 'text-gray-800 hover:bg-blue-50 transition'}
-                `}
+                style={{
+                  fontWeight: location.pathname === item.path ? 'bold' : 'normal',
+                  color: location.pathname === item.path ? '#1976d2' : '#333',
+                  background: location.pathname === item.path ? '#e3f0ff' : 'none',
+                  display: 'block',
+                  margin: '10px 0',
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  transition: 'background 0.2s',
+                }}
               >
                 {item.label}
               </Link>
-            ))}
-          </nav>
+            </div>
+          ))}
         </div>
-        {/* Logout */}
+
+        {/* 🔽 Logout Button */}
         <button
           onClick={signout}
-          className="mt-6 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 justify-center transition"
+          style={{
+            marginTop: 20,
+            color: 'white',
+            backgroundColor: 'red',
+            border: 'none',
+            padding: '10px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            borderRadius: '4px',
+          }}
         >
           🚪 লগ আউট
         </button>
-      </aside>
-      {/* Main Content */}
-      <main className="flex-1 px-6 py-5">
+      </nav>
+
+      {/* 🔽 Main Page Content */}
+      <main style={{ flex: 1, padding: 20 }}>
         <MessNameBar />
         <Outlet />
       </main>
