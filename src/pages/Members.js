@@ -7,9 +7,9 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  writeBatch,
-  query,
-  where
+  // writeBatch,
+  // query,
+  // where
 } from 'firebase/firestore';
 import {
   Card, Typography, Box, Grid, Button, TextField,
@@ -71,10 +71,8 @@ export default function Members({ showToast }) {
   const handleDelete = async (id) => {
     const member = members.find(m => m.id === id);
     if (!member) return;
-
     await deleteDoc(doc(db, 'members', id));
-    // ... (cascade delete logic থাকবে আগের মতো)
-
+    // ... (cascade delete logic will go here if needed)
     fetchMembers();
     showToast && showToast("সদস্য এবং সংশ্লিষ্ট সব হিসাব দ্রুত ডিলিট হয়েছে!", "success");
   };
@@ -83,10 +81,15 @@ export default function Members({ showToast }) {
   const getInitial = name => name ? name[0].toUpperCase() : "?";
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 2 }}>
-        👥 সদস্য তালিকা
-      </Typography>
+    <Box sx={{ minHeight: "90vh" }}>
+      {/* Left-aligned main title */}
+      <Box sx={{ width: "100%", maxWidth: 900, mx: "auto" }}>
+        <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 2, textAlign: "left" }}>
+          👥 সদস্য তালিকা
+        </Typography>
+      </Box>
+
+      {/* Input Form Centered */}
       <Grid container justifyContent="center">
         <Grid item xs={12} md={7}>
           <Card sx={{ mb: 3, p: 2, borderRadius: 4, bgcolor: "#f7faff", boxShadow: 3 }}>
@@ -116,6 +119,7 @@ export default function Members({ showToast }) {
         </Grid>
       </Grid>
 
+      {/* Member List Table Centered */}
       <Grid container justifyContent="center">
         <Grid item xs={12} md={7}>
           <Paper
@@ -140,7 +144,6 @@ export default function Members({ showToast }) {
               }}
             >
               <Box sx={{ flex: 2, fontWeight: 700, fontSize: 18 }}>নাম</Box>
-              {/* flex: 2 এবং flex: 1 বাড়ালে name/action এর মাঝের দূরত্ব বেড়ে যাবে */}
               <Box sx={{ flex: 1, fontWeight: 700, fontSize: 18, textAlign: "center" }}>একশন</Box>
             </Box>
 
@@ -155,7 +158,7 @@ export default function Members({ showToast }) {
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between", // Name & action column এর মাঝে gap
+                    justifyContent: "space-between",
                     px: 4,
                     py: 2.2,
                     bgcolor: "#fff",
@@ -174,7 +177,7 @@ export default function Members({ showToast }) {
                     display: "flex",
                     alignItems: "center",
                     minWidth: 0,
-                    pr: 5, // এই pr: 5 (paddingRight) name/action এর মাঝে বড় gap দিবে
+                    pr: 5,
                   }}>
                     <Avatar sx={{
                       bgcolor: "#1976d2",

@@ -109,16 +109,21 @@ export default function Dashboard() {
   }
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 700, textAlign: "left" }}>
+    <Box sx={{ width: "100%", px: { xs: 1, sm: 3, md: 5 }, mt: 2 }}>
+      {/* 1. Left-aligned title (page edge/sidebar theke shuru) */}
+      <Typography
+        variant="h5"
+        gutterBottom
+        sx={{ mb: 3, fontWeight: 700, textAlign: "left" }}
+      >
         📊 ড্যাশবোর্ড ({currentMonth})
       </Typography>
 
-      {/* Summary Card গুলো মাঝখানে */}
+      {/* 2. Summary cards: responsive, normal grid */}
       <Grid
         container
         spacing={3}
-        justifyContent="center"
+        justifyContent="flex-start"
         alignItems="center"
         sx={{ mb: 2 }}
       >
@@ -166,11 +171,11 @@ export default function Dashboard() {
 
       <Divider sx={{ my: 3 }} />
 
-      {/* PieChart/Card গুলো মাঝখানে */}
+      {/* 3. PieChart Cards, still centered in grid */}
       <Grid
         container
         spacing={3}
-        justifyContent="center"
+        justifyContent="flex-start"
         alignItems="flex-start"
       >
         <Grid item xs={12} sm={6} md={4}>
