@@ -41,7 +41,6 @@ export default function SidebarLayout() {
   const { signout, user } = useFirebaseAuth();
   const { currentMonth, setCurrentMonth } = useMonth();
 
-  // মাস ডিফল্ট সেট করা
   useEffect(() => {
     if (!currentMonth) {
       const now = new Date();
@@ -50,7 +49,6 @@ export default function SidebarLayout() {
     }
   }, [currentMonth, setCurrentMonth]);
 
-  // 2024 থেকে শুরু করে আগামী ২ বছর পর্যন্ত মাস তৈরি
   const generateAllMonths = () => {
     const months = [];
     const startYear = 2024;
@@ -69,31 +67,37 @@ export default function SidebarLayout() {
     return months;
   };
 
-  // ইউজার ইনিশিয়াল
   const getUserInitial = () =>
     (user?.displayName?.[0] || user?.email?.[0] || 'U').toUpperCase();
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{
+      display: 'flex',
+      bgcolor: "linear-gradient(120deg, #f7fcfa 0%, #e2f7f2 70%, #e3f2fd 100%)",
+      minHeight: "100vh"
+    }}>
       {/* --- AppBar --- */}
       <AppBar
         position="fixed"
         sx={{
           zIndex: theme => theme.zIndex.drawer + 1,
-          bgcolor: "#1976d2",
+          bgcolor: "#3bb59a",
+          borderBottom: "3px solid #30a88b",
+          minHeight: 64,
+          boxShadow: "0 2px 9px #0001"
         }}
+        elevation={4}
       >
         <Toolbar sx={{ minHeight: 60 }}>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 800, letterSpacing: 1 }}>
             মেস ম্যানেজার
           </Typography>
-          {/* ইউজার অ্যাভাটার */}
           {user && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Avatar src={user.photoURL} alt="profile" sx={{ bgcolor: "#1565c0" }}>
+              <Avatar src={user.photoURL} alt="profile" sx={{ bgcolor: "#27a17a" }}>
                 {!user.photoURL && getUserInitial()}
               </Avatar>
-              <Typography sx={{ fontSize: 15, fontWeight: 600 }}>{user.displayName || "No Name"}</Typography>
+              <Typography sx={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>{user.displayName || "No Name"}</Typography>
             </Box>
           )}
         </Toolbar>
@@ -108,28 +112,41 @@ export default function SidebarLayout() {
           [`& .MuiDrawer-paper`]: {
             width: drawerWidth,
             boxSizing: 'border-box',
-            bgcolor: "#fff"
+            bgcolor: "#fff",
+            borderRight: "2px solid #30a88b",
+            boxShadow: "3px 0 10px #0001",
+            position: 'relative'
           },
         }}
         open
       >
         <Toolbar />
-        <Box sx={{ p: 2, pt: 0 }}>
-          {/* ইউজার ইনফো */}
+        <Box
+          sx={{
+            p: 2,
+            pt: 0,
+            minHeight: "100vh",
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            position: 'relative'
+          }}
+        >
+          {/* ইউজার কার্ড */}
           {user && (
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1.2,
-                bgcolor: "#f5f5f5",
+                bgcolor: "#e2f7f2",
                 borderRadius: 2,
                 p: 1,
-                mb: 2,
+                mb: 1.5,
                 boxShadow: 1
               }}
             >
-              <Avatar src={user.photoURL} alt="profile" sx={{ width: 36, height: 36, bgcolor: "#1976d2", fontWeight: "bold" }}>
+              <Avatar src={user.photoURL} alt="profile" sx={{ width: 36, height: 36, bgcolor: "#3bb59a", fontWeight: "bold" }}>
                 {!user.photoURL && getUserInitial()}
               </Avatar>
               <Box>
@@ -145,13 +162,13 @@ export default function SidebarLayout() {
 
           {/* মাস নির্বাচন */}
           <Box sx={{ mb: 2 }}>
-            <Typography sx={{ fontSize: 14, mb: 0.5 }}>🌙 মাস নির্বাচন:</Typography>
+            <Typography sx={{ fontSize: 14, mb: 0.5, fontWeight: 500, color: "#333" }}>🌙 মাস নির্বাচন:</Typography>
             <Select
               value={currentMonth}
               onChange={e => setCurrentMonth(e.target.value)}
               fullWidth
               size="small"
-              sx={{ background: "#f0f4ff", borderRadius: 1 }}
+              sx={{ background: "#f5fcfa", borderRadius: 1, fontWeight: 600 }}
             >
               {generateAllMonths().map(m => (
                 <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
@@ -159,10 +176,10 @@ export default function SidebarLayout() {
             </Select>
           </Box>
 
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 2, borderColor: "#cbeee6" }} />
 
           {/* Navigation */}
-          <List>
+          <List sx={{ mb: 1 }}>
             {navItems.map(item => (
               <ListItemButton
                 key={item.path}
@@ -171,12 +188,13 @@ export default function SidebarLayout() {
                 sx={{
                   borderRadius: 2,
                   mb: 0.5,
-                  color: location.pathname === item.path ? "#1976d2" : "#222",
-                  bgcolor: location.pathname === item.path ? "#e3f0ff" : "transparent",
-                  '&:hover': { bgcolor: "#e3f2fd" }
+                  fontWeight: 600,
+                  color: location.pathname === item.path ? "#3bb59a" : "#1a1a1a",
+                  bgcolor: location.pathname === item.path ? "#b2dfdb" : "transparent",
+                  '&:hover': { bgcolor: "#e2f7f2" }
                 }}
               >
-                <ListItemIcon sx={{ color: location.pathname === item.path ? "#1976d2" : "#888" }}>
+                <ListItemIcon sx={{ color: location.pathname === item.path ? "#3bb59a" : "#7a9580" }}>
                   {item.icon}
                 </ListItemIcon>
                 <ListItemText primary={item.label} />
@@ -184,26 +202,55 @@ export default function SidebarLayout() {
             ))}
           </List>
 
-          {/* নিচে স্পেস ফাঁকা রাখতে flex ব্যবহার */}
-          <Box sx={{ flexGrow: 1 }} />
-          <Divider sx={{ mt: 3 }} />
-
-          {/* Logout */}
-          <Button
-            startIcon={<LogoutIcon />}
-            variant="contained"
-            color="error"
-            onClick={signout}
-            fullWidth
-            sx={{ mt: 2, borderRadius: 1 }}
+          {/* Logout, created by, copyright */}
+          <Box
+            sx={{
+              mt: 1.2,
+              mb: 0.2,
+              px: 0,
+              textAlign: "center",
+              border: "1px solid #e2f7f2",
+              borderRadius: 2,
+              boxShadow: "0 2px 7px #0000",
+              bgcolor: "#f8fafb",
+            }}
           >
-            লগ আউট
-          </Button>
+            <Button
+              startIcon={<LogoutIcon />}
+              variant="contained"
+              color="error"
+              onClick={signout}
+              fullWidth
+              size="small"
+              sx={{
+                borderRadius: 1,
+                fontWeight: 600,
+                fontSize: 15,
+                py: 0.6,
+                mb: 0.7,
+                minHeight: 0,
+                minWidth: 0
+              }}
+            >
+              লগ আউট
+            </Button>
+            <Typography sx={{ color: "#63c9a7", fontSize: 13, mt: 0.3 }}>
+              Created by <span style={{ color: "#3bb59a", fontWeight: 600 }}>Tanjil</span>
+            </Typography>
+            <Typography sx={{ color: "#bdbdbd", fontSize: 12, mt: 0.1 }}>
+              © {new Date().getFullYear()} Mess Manager
+            </Typography>
+          </Box>
         </Box>
       </Drawer>
 
       {/* --- Main Content --- */}
-      <Box component="main" sx={{ flexGrow: 1, bgcolor: "#f5f5f5", minHeight: "100vh", p: 3 }}>
+      <Box component="main" sx={{
+        flexGrow: 1,
+        minHeight: "100vh",
+        p: { xs: 1.5, sm: 2.5, md: 3 },
+        background: "linear-gradient(120deg, #f8fafc 0%, #e2f7f2 100%)"
+      }}>
         <Toolbar />
         <MessNameBar />
         <Outlet />

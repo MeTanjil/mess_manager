@@ -5,8 +5,8 @@ import {
 import { useMonth } from '../context/MonthContext';
 
 import {
-  Box, Card, CardContent, Typography, Button, TextField, Select, MenuItem, InputLabel, FormControl,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Stack, Tooltip
+  Box, Paper, Card, CardContent, Typography, Button, TextField, Select, MenuItem, InputLabel, FormControl,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Stack, Tooltip, Divider
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import EditIcon from '@mui/icons-material/Edit';
@@ -123,204 +123,237 @@ export default function ExpenseEntry({ members, showToast }) {
   };
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
-        💰 খরচ এন্ট্রি
-      </Typography>
-      {/* Entry Form */}
-      <Card sx={{ maxWidth: 540, mx: "auto", boxShadow: 3, borderRadius: 4, bgcolor: "#f9fbfd", mb: 4 }}>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={2}>
-              <TextField
-                label="তারিখ"
-                type="date"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                required
-                sx={{ bgcolor: "#fff" }}
-                size="small"
-              />
-              <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
-                <InputLabel id="payer-label">কে টাকা দিয়েছে?</InputLabel>
-                <Select
-                  labelId="payer-label"
-                  value={payerId}
-                  label="কে টাকা দিয়েছে?"
-                  onChange={e => setPayerId(e.target.value)}
-                >
-                  <MenuItem value=""><em>সদস্য নির্বাচন করুন</em></MenuItem>
-                  {members.map(m => (
-                    <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TextField
-                label="পরিমাণ (৳)"
-                type="number"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                required
-                inputProps={{
-                  min: 1,
-                  step: 1,
-                  style: { textAlign: "center", fontWeight: 700, fontSize: 18 }
-                }}
-                sx={{ bgcolor: "#fff", width: 160 }}
-                size="small"
-              />
-              <TextField
-                label="কারণ/বিবরণ"
-                value={purpose}
-                onChange={e => setPurpose(e.target.value)}
-                required
-                sx={{ bgcolor: "#fff" }}
-                size="small"
-              />
-              <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
-                <InputLabel id="type-label">খরচের ধরন</InputLabel>
-                <Select
-                  labelId="type-label"
-                  value={type}
-                  label="খরচের ধরন"
-                  onChange={e => setType(e.target.value)}
-                >
-                  <MenuItem value="shared">Shared</MenuItem>
-                  <MenuItem value="individual">Individual</MenuItem>
-                </Select>
-              </FormControl>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={editId ? <EditIcon /> : <SaveIcon />}
-                  sx={{ px: 4, fontWeight: 600, fontSize: 16, borderRadius: 2 }}
-                >
-                  {editId ? "আপডেট করুন" : "সংরক্ষণ করুন"}
-                </Button>
-                {editId && (
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<CloseIcon />}
-                    onClick={handleCancelEdit}
-                  >
-                    বাতিল
-                  </Button>
-                )}
-              </Stack>
-            </Stack>
-          </form>
-        </CardContent>
-      </Card>
+    <Box maxWidth="lg" mx="auto" mt={4} px={2}>
+      <Paper
+        elevation={4}
+        sx={{
+          p: 0,
+          borderRadius: 4,
+          border: '1px solid #e0e0e0',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Top divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
 
-      {/* Table */}
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-        🧾 খরচের তালিকা ({currentMonth})
-      </Typography>
-      <TableContainer component={Paper} sx={{
-        maxWidth: 1100,
-        mx: "auto",
-        boxShadow: 2,
-        borderRadius: 3,
-        mt: 2,
-        background: "#fff"
-      }}>
-        <Table size="medium">
-          <TableHead>
-            <TableRow sx={{ background: "#f6faff" }}>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>তারিখ</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>সদস্য</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>টাকার পরিমাণ</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>কারণ/বিবরণ</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>ধরন</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>একশন</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {expenses.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ color: "#888", py: 4, fontSize: 16 }}>
-                  কোনো খরচ এন্ট্রি নেই
-                </TableCell>
-              </TableRow>
-            ) : (
-              expenses.map(exp => (
-                <TableRow key={exp.id} hover sx={{
-                  transition: "all 0.18s", "&:hover": { background: "#f8fbff" }
-                }}>
-                  <TableCell align="center" sx={{ fontSize: 16 }}>{exp.date}</TableCell>
-                  <TableCell align="center" sx={{ fontSize: 16 }}>{getMemberName(exp.payerId)}</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 700, color: "#1976d2", fontSize: 17 }}>
-                    {exp.amount} টাকা
-                  </TableCell>
-                  <TableCell align="center" sx={{ fontSize: 15, wordBreak: "break-word" }}>{exp.purpose}</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 500 }}>
-                    {exp.type === 'shared' ? 'Shared' : 'Individual'}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Stack direction="row" spacing={1} justifyContent="center">
-                      <Tooltip title="এডিট করুন">
+        {/* Title */}
+        <Box px={3} pt={2} pb={1}>
+          <Typography variant="h6" fontWeight={700} color="primary">
+            💰 খরচ এন্ট্রি
+          </Typography>
+        </Box>
+
+        {/* Left/Right Divider (form+table box) */}
+        <Box
+          sx={{
+            px: 0,
+            borderLeft: '2px solid #1976d2',
+            borderRight: '2px solid #1976d2',
+            borderRadius: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {/* Entry Form */}
+          <Box py={2} px={3}>
+            <Card sx={{ maxWidth: 500, mx: "auto", boxShadow: 1, borderRadius: 3, bgcolor: "#f9fbfd", mb: 1 }}>
+              <CardContent>
+                <form onSubmit={handleSubmit}>
+                  <Stack spacing={2}>
+                    <TextField
+                      label="তারিখ"
+                      type="date"
+                      value={date}
+                      onChange={e => setDate(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      required
+                      sx={{ bgcolor: "#fff" }}
+                      size="small"
+                    />
+                    <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
+                      <InputLabel id="payer-label">কে টাকা দিয়েছে?</InputLabel>
+                      <Select
+                        labelId="payer-label"
+                        value={payerId}
+                        label="কে টাকা দিয়েছে?"
+                        onChange={e => setPayerId(e.target.value)}
+                      >
+                        <MenuItem value=""><em>সদস্য নির্বাচন করুন</em></MenuItem>
+                        {members.map(m => (
+                          <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      label="পরিমাণ (৳)"
+                      type="number"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      required
+                      inputProps={{
+                        min: 1,
+                        step: 1,
+                        style: { textAlign: "center", fontWeight: 700, fontSize: 18 }
+                      }}
+                      sx={{ bgcolor: "#fff", width: 160 }}
+                      size="small"
+                    />
+                    <TextField
+                      label="কারণ/বিবরণ"
+                      value={purpose}
+                      onChange={e => setPurpose(e.target.value)}
+                      required
+                      sx={{ bgcolor: "#fff" }}
+                      size="small"
+                    />
+                    <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
+                      <InputLabel id="type-label">খরচের ধরন</InputLabel>
+                      <Select
+                        labelId="type-label"
+                        value={type}
+                        label="খরচের ধরন"
+                        onChange={e => setType(e.target.value)}
+                      >
+                        <MenuItem value="shared">Shared</MenuItem>
+                        <MenuItem value="individual">Individual</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        startIcon={editId ? <EditIcon /> : <SaveIcon />}
+                        sx={{ px: 4, fontWeight: 600, fontSize: 16, borderRadius: 2 }}
+                      >
+                        {editId ? "আপডেট করুন" : "সংরক্ষণ করুন"}
+                      </Button>
+                      {editId && (
                         <Button
-                          color="primary"
-                          size="small"
                           variant="outlined"
-                          startIcon={<EditIcon />}
-                          onClick={() => handleEdit(exp)}
-                          sx={{
-                            minWidth: 0,
-                            px: 1.2,
-                            borderRadius: 2,
-                            fontWeight: 600,
-                            border: "1.5px solid #1976d2",
-                            background: "#f7fbff",
-                            '&:hover': {
-                              background: "#e3f0ff",
-                              border: "1.5px solid #0a56a3"
-                            },
-                            boxShadow: 0,
-                            textTransform: "none",
-                            cursor: "pointer"
-                          }}
-                        >
-                          এডিট
-                        </Button>
-                      </Tooltip>
-                      <Tooltip title="ডিলিট করুন">
-                        <Button
                           color="error"
-                          size="small"
-                          variant="outlined"
-                          startIcon={<DeleteIcon />}
-                          onClick={() => handleDelete(exp.id)}
-                          sx={{
-                            minWidth: 0,
-                            px: 1.2,
-                            borderRadius: 2,
-                            fontWeight: 600,
-                            border: "1.5px solid #e53935",
-                            background: "#fff7f7",
-                            '&:hover': {
-                              background: "#ffeaea",
-                              border: "1.5px solid #b71c1c"
-                            },
-                            boxShadow: 0,
-                            textTransform: "none",
-                            cursor: "pointer"
-                          }}
+                          startIcon={<CloseIcon />}
+                          onClick={handleCancelEdit}
                         >
-                          ডিলিট
+                          বাতিল
                         </Button>
-                      </Tooltip>
+                      )}
                     </Stack>
-                  </TableCell>
+                  </Stack>
+                </form>
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Table Title */}
+          <Typography variant="subtitle1" fontWeight={700} sx={{ px: 3, mt: 1, mb: 1, textAlign: "left" }}>
+            🧾 খরচের তালিকা ({currentMonth})
+          </Typography>
+
+          {/* Table */}
+          <TableContainer component={Box} sx={{ mb: 2 }}>
+            <Table size="medium">
+              <TableHead>
+                <TableRow>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>তারিখ</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>সদস্য</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>টাকার পরিমাণ</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>কারণ/বিবরণ</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>ধরন</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 17 }}>একশন</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              </TableHead>
+              <TableBody>
+                {expenses.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ color: "#888", py: 4, fontSize: 16 }}>
+                      কোনো খরচ এন্ট্রি নেই
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  expenses.map(exp => (
+                    <TableRow key={exp.id} hover sx={{
+                      transition: "all 0.18s", "&:hover": { background: "#f8fbff" }
+                    }}>
+                      <TableCell align="center" sx={{ fontSize: 16 }}>{exp.date}</TableCell>
+                      <TableCell align="center" sx={{ fontSize: 16 }}>{getMemberName(exp.payerId)}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700, color: "#1976d2", fontSize: 17 }}>
+                        {exp.amount} টাকা
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontSize: 15, wordBreak: "break-word" }}>{exp.purpose}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 500 }}>
+                        {exp.type === 'shared' ? 'Shared' : 'Individual'}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Stack direction="row" spacing={1} justifyContent="center">
+                          <Tooltip title="এডিট করুন">
+                            <Button
+                              color="primary"
+                              size="small"
+                              variant="outlined"
+                              startIcon={<EditIcon />}
+                              onClick={() => handleEdit(exp)}
+                              sx={{
+                                minWidth: 0,
+                                px: 1.2,
+                                borderRadius: 2,
+                                fontWeight: 600,
+                                border: "1.5px solid #1976d2",
+                                background: "#f7fbff",
+                                '&:hover': {
+                                  background: "#e3f0ff",
+                                  border: "1.5px solid #0a56a3"
+                                },
+                                boxShadow: 0,
+                                textTransform: "none",
+                                cursor: "pointer"
+                              }}
+                            >
+                              এডিট
+                            </Button>
+                          </Tooltip>
+                          <Tooltip title="ডিলিট করুন">
+                            <Button
+                              color="error"
+                              size="small"
+                              variant="outlined"
+                              startIcon={<DeleteIcon />}
+                              onClick={() => handleDelete(exp.id)}
+                              sx={{
+                                minWidth: 0,
+                                px: 1.2,
+                                borderRadius: 2,
+                                fontWeight: 600,
+                                border: "1.5px solid #e53935",
+                                background: "#fff7f7",
+                                '&:hover': {
+                                  background: "#ffeaea",
+                                  border: "1.5px solid #b71c1c"
+                                },
+                                boxShadow: 0,
+                                textTransform: "none",
+                                cursor: "pointer"
+                              }}
+                            >
+                              ডিলিট
+                            </Button>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+        {/* Bottom divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
+        {/* Footer note */}
+        <Box px={3} py={2}>
+          <Typography sx={{ color: "gray" }}>
+            <b>নোট:</b> কোনো খরচ যোগ বা পরিবর্তন করলে রিপোর্টে অটো আপডেট হবে।
+          </Typography>
+        </Box>
+      </Paper>
     </Box>
   );
 }

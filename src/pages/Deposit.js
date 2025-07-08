@@ -14,8 +14,8 @@ import { useMonth } from '../context/MonthContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 import {
-  Box, Card, CardContent, Typography, Button, TextField, Select, MenuItem, InputLabel, FormControl,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Stack, Tooltip
+  Box, Paper, Card, CardContent, Typography, Button, TextField, Select, MenuItem, InputLabel, FormControl,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Stack, Tooltip, Divider
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import EditIcon from '@mui/icons-material/Edit';
@@ -121,185 +121,219 @@ export default function Deposit({ showToast }) {
   };
 
   return (
-    <Box>
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
-        💰 জমা এন্ট্রি
-      </Typography>
-      <Card sx={{ maxWidth: 500, mx: "auto", boxShadow: 3, borderRadius: 4, bgcolor: "#f9fbfd", mb: 4 }}>
-        <CardContent>
-          <form onSubmit={handleSubmit}>
-            <Stack spacing={2}>
-              <TextField
-                label="তারিখ"
-                type="date"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                required
-                sx={{ bgcolor: "#fff" }}
-                size="small"
-              />
-              <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
-                <InputLabel id="member-label">মেম্বার</InputLabel>
-                <Select
-                  labelId="member-label"
-                  value={member}
-                  label="মেম্বার"
-                  onChange={e => setMember(e.target.value)}
-                >
-                  <MenuItem value=""><em>-- সদস্য নির্বাচন করুন --</em></MenuItem>
-                  {members.map((m) => (
-                    <MenuItem key={m.id} value={m.name}>{m.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <TextField
-                label="টাকার পরিমাণ (৳)"
-                type="number"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                required
-                inputProps={{
-                  min: 1,
-                  step: 1,
-                  style: { textAlign: "center", fontWeight: 700, fontSize: 18 }
-                }}
-                sx={{ bgcolor: "#fff", width: 180 }}
-                size="small"
-              />
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={editingId ? <EditIcon /> : <SaveIcon />}
-                  sx={{ px: 4, fontWeight: 600, fontSize: 16, borderRadius: 2 }}
-                >
-                  {editingId ? "আপডেট করুন" : "সেভ করুন"}
-                </Button>
-                {editingId && (
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    startIcon={<CloseIcon />}
-                    onClick={resetForm}
-                  >
-                    বাতিল
-                  </Button>
-                )}
-              </Stack>
-            </Stack>
-          </form>
-        </CardContent>
-      </Card>
+    <Box maxWidth="lg" mx="auto" mt={4} px={2}>
+      <Paper
+        elevation={4}
+        sx={{
+          p: 0,
+          borderRadius: 4,
+          border: '1px solid #e0e0e0',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Top divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
 
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-        📅 {currentMonth} মাসের জমা তালিকা:
-      </Typography>
-      <TableContainer component={Paper} sx={{
-        maxWidth: 700,
-        mx: "auto",
-        boxShadow: 2,
-        borderRadius: 4,
-        mt: 2,
-        background: "#fff"
-      }}>
-        <Table size="medium">
-          <TableHead>
-            <TableRow sx={{ background: "#f3f7fa" }}>
-              <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 120 }}>তারিখ</TableCell>
-              <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 200 }}>মেম্বার</TableCell>
-              <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 160 }}>টাকার পরিমাণ</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 16, width: 120 }}>একশন</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {depositList.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ color: "#888", py: 4, fontSize: 16 }}>
-                  এই মাসে কোনো জমা নেই।
-                </TableCell>
-              </TableRow>
-            ) : (
-              depositList.sort((a, b) => a.date.localeCompare(b.date)).map(item => (
-                <TableRow key={item.id} hover sx={{
-                  transition: "all 0.18s", "&:hover": { background: "#f8fbff" }
-                }}>
-                  <TableCell align="left" sx={{ fontSize: 16 }}>{item.date}</TableCell>
-                  <TableCell align="left" sx={{ fontSize: 16 }}>{item.member}</TableCell>
-                  <TableCell align="left" sx={{ fontWeight: 700, color: "#1976d2", fontSize: 17 }}>
-                    {item.amount} টাকা
-                  </TableCell>
-                  <TableCell align="center">
-                    <Stack direction="row" spacing={1} justifyContent="center">
-                      <Tooltip title="এডিট করুন">
+        {/* Title */}
+        <Box px={3} pt={2} pb={1}>
+          <Typography variant="h6" fontWeight={700} color="primary">
+            💰 জমা এন্ট্রি
+          </Typography>
+        </Box>
+
+        {/* Entry Form */}
+        <Box
+          sx={{
+            px: 0,
+            borderLeft: '2px solid #1976d2',
+            borderRight: '2px solid #1976d2',
+            borderRadius: 0,
+            overflow: 'hidden',
+          }}
+        >
+          <Box py={2} px={3}>
+            <Card sx={{ maxWidth: 480, mx: "auto", boxShadow: 1, borderRadius: 3, bgcolor: "#f9fbfd", mb: 1 }}>
+              <CardContent>
+                <form onSubmit={handleSubmit}>
+                  <Stack spacing={2}>
+                    <TextField
+                      label="তারিখ"
+                      type="date"
+                      value={date}
+                      onChange={e => setDate(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      required
+                      sx={{ bgcolor: "#fff" }}
+                      size="small"
+                    />
+                    <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
+                      <InputLabel id="member-label">মেম্বার</InputLabel>
+                      <Select
+                        labelId="member-label"
+                        value={member}
+                        label="মেম্বার"
+                        onChange={e => setMember(e.target.value)}
+                      >
+                        <MenuItem value=""><em>-- সদস্য নির্বাচন করুন --</em></MenuItem>
+                        {members.map((m) => (
+                          <MenuItem key={m.id} value={m.name}>{m.name}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      label="টাকার পরিমাণ (৳)"
+                      type="number"
+                      value={amount}
+                      onChange={e => setAmount(e.target.value)}
+                      required
+                      inputProps={{
+                        min: 1,
+                        step: 1,
+                        style: { textAlign: "center", fontWeight: 700, fontSize: 18 }
+                      }}
+                      sx={{ bgcolor: "#fff", width: 180 }}
+                      size="small"
+                    />
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        startIcon={editingId ? <EditIcon /> : <SaveIcon />}
+                        sx={{ px: 4, fontWeight: 600, fontSize: 16, borderRadius: 2 }}
+                      >
+                        {editingId ? "আপডেট করুন" : "সেভ করুন"}
+                      </Button>
+                      {editingId && (
                         <Button
-                          color="primary"
-                          size="small"
                           variant="outlined"
-                          startIcon={<EditIcon />}
-                          onClick={() => handleEdit(item)}
-                          sx={{
-                            minWidth: 0,
-                            px: 1.2,
-                            borderRadius: 2,
-                            fontWeight: 600,
-                            border: "1.5px solid #1976d2",
-                            background: "#f7fbff",
-                            '&:hover': {
-                              background: "#e3f0ff",
-                              border: "1.5px solid #0a56a3"
-                            },
-                            boxShadow: 0,
-                            textTransform: "none",
-                            cursor: "pointer"
-                          }}
-                        >
-                          এডিট
-                        </Button>
-                      </Tooltip>
-                      <Tooltip title="ডিলিট করুন">
-                        <Button
                           color="error"
-                          size="small"
-                          variant="outlined"
-                          startIcon={<DeleteIcon />}
-                          onClick={() =>
-                            setConfirmState({
-                              show: true,
-                              id: item.id,
-                              date: item.date,
-                              member: item.member,
-                            })
-                          }
-                          sx={{
-                            minWidth: 0,
-                            px: 1.2,
-                            borderRadius: 2,
-                            fontWeight: 600,
-                            border: "1.5px solid #e53935",
-                            background: "#fff7f7",
-                            '&:hover': {
-                              background: "#ffeaea",
-                              border: "1.5px solid #b71c1c"
-                            },
-                            boxShadow: 0,
-                            textTransform: "none",
-                            cursor: "pointer"
-                          }}
+                          startIcon={<CloseIcon />}
+                          onClick={resetForm}
                         >
-                          ডিলিট
+                          বাতিল
                         </Button>
-                      </Tooltip>
+                      )}
                     </Stack>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                  </Stack>
+                </form>
+              </CardContent>
+            </Card>
+          </Box>
+          {/* Table Title */}
+          <Typography variant="subtitle1" fontWeight={700} sx={{ px: 3, mt: 1, mb: 1, textAlign: "left" }}>
+            📅 {currentMonth} মাসের জমা তালিকা:
+          </Typography>
 
-      {/* Custom Confirm Modal */}
+          {/* Table */}
+          <TableContainer component={Box} sx={{ mb: 2 }}>
+            <Table size="medium">
+              <TableHead>
+                <TableRow>
+                  <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 120 }}>তারিখ</TableCell>
+                  <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 200 }}>মেম্বার</TableCell>
+                  <TableCell align="left" sx={{ fontWeight: 700, fontSize: 16, width: 160 }}>টাকার পরিমাণ</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 16, width: 120 }}>একশন</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {depositList.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center" sx={{ color: "#888", py: 4, fontSize: 16 }}>
+                      এই মাসে কোনো জমা নেই।
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  depositList.sort((a, b) => a.date.localeCompare(b.date)).map(item => (
+                    <TableRow key={item.id} hover sx={{
+                      transition: "all 0.18s", "&:hover": { background: "#f8fbff" }
+                    }}>
+                      <TableCell align="left" sx={{ fontSize: 16 }}>{item.date}</TableCell>
+                      <TableCell align="left" sx={{ fontSize: 16 }}>{item.member}</TableCell>
+                      <TableCell align="left" sx={{ fontWeight: 700, color: "#1976d2", fontSize: 17 }}>
+                        {item.amount} টাকা
+                      </TableCell>
+                      <TableCell align="center">
+                        <Stack direction="row" spacing={1} justifyContent="center">
+                          <Tooltip title="এডিট করুন">
+                            <Button
+                              color="primary"
+                              size="small"
+                              variant="outlined"
+                              startIcon={<EditIcon />}
+                              onClick={() => handleEdit(item)}
+                              sx={{
+                                minWidth: 0,
+                                px: 1.2,
+                                borderRadius: 2,
+                                fontWeight: 600,
+                                border: "1.5px solid #1976d2",
+                                background: "#f7fbff",
+                                '&:hover': {
+                                  background: "#e3f0ff",
+                                  border: "1.5px solid #0a56a3"
+                                },
+                                boxShadow: 0,
+                                textTransform: "none",
+                                cursor: "pointer"
+                              }}
+                            >
+                              এডিট
+                            </Button>
+                          </Tooltip>
+                          <Tooltip title="ডিলিট করুন">
+                            <Button
+                              color="error"
+                              size="small"
+                              variant="outlined"
+                              startIcon={<DeleteIcon />}
+                              onClick={() =>
+                                setConfirmState({
+                                  show: true,
+                                  id: item.id,
+                                  date: item.date,
+                                  member: item.member,
+                                })
+                              }
+                              sx={{
+                                minWidth: 0,
+                                px: 1.2,
+                                borderRadius: 2,
+                                fontWeight: 600,
+                                border: "1.5px solid #e53935",
+                                background: "#fff7f7",
+                                '&:hover': {
+                                  background: "#ffeaea",
+                                  border: "1.5px solid #b71c1c"
+                                },
+                                boxShadow: 0,
+                                textTransform: "none",
+                                cursor: "pointer"
+                              }}
+                            >
+                              ডিলিট
+                            </Button>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+
+        {/* Bottom divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
+        {/* Footer notes */}
+        <Box px={3} py={2}>
+          <Typography sx={{ color: "gray" }}>
+            <b>নোট:</b> জমা যুক্ত বা পরিবর্তনের পর রিপোর্ট/ব্যালেন্স পেজে সঙ্গে সঙ্গে হিসাব দেখাবে।
+          </Typography>
+        </Box>
+      </Paper>
+
+      {/* Confirm Modal */}
       <ConfirmDialog
         show={confirmState.show}
         message={

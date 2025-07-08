@@ -7,8 +7,8 @@ import {
 import { useMonth } from '../context/MonthContext';
 
 import {
-  Box, Card, CardContent, Typography, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Paper, Divider, Stack
+  Box, Paper, Typography, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, Card, CardContent, Stack, Divider,
 } from '@mui/material';
 
 const db = getFirestore();
@@ -103,110 +103,125 @@ export default function MealRate() {
   const totalCost = Object.values(distributedCost).reduce((sum, c) => sum + c, 0);
 
   return (
-    <Box sx={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      mt: 3,
-      minHeight: "90vh"
-    }}>
-      {/* Left-aligned main title */}
-      <Box sx={{ width: "100%", maxWidth: 900 }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3, textAlign: "left" }}>
-          📊 মিল রেট হিসাব
-        </Typography>
-      </Box>
-
-      {/* Cards in middle */}
-      <Stack
-        direction={{ xs: "column", md: "row" }}
-        spacing={2}
-        sx={{ mb: 3, justifyContent: "center", alignItems: "center", width: "100%" }}
-      >
-        <Card sx={{ minWidth: 210, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 2 }}>
-          <CardContent>
-            <Typography>📅 মাস</Typography>
-            <Typography variant="h6" color="primary">{currentMonth || "নির্বাচিত নয়"}</Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ minWidth: 210, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 2 }}>
-          <CardContent>
-            <Typography>💸 মোট বাজার</Typography>
-            <Typography variant="h6" color="secondary">{totalBazarInt} টাকা</Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ minWidth: 210, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 2 }}>
-          <CardContent>
-            <Typography>🍽️ মোট মিল</Typography>
-            <Typography variant="h6" color="success.main">{totalMealInt} টি</Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ minWidth: 210, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 2 }}>
-          <CardContent>
-            <Typography>⚖️ প্রতি মিল রেট</Typography>
-            <Typography variant="h6" color="info.main">{mealRate} টাকা</Typography>
-          </CardContent>
-        </Card>
-      </Stack>
-
-      <Divider sx={{ my: 3, width: "100%", maxWidth: 800 }} />
-
-      {/* Left-aligned subtitle */}
-      <Box sx={{ width: "100%", maxWidth: 900 }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3, textAlign: "left" }}>
-          👤 মেম্বার অনুযায়ী হিসাব:
-        </Typography>
-      </Box>
-
-      {/* Modern Table */}
-      <TableContainer
-        component={Paper}
+    <Box maxWidth="lg" mx="auto" mt={4} px={2}>
+      <Paper
+        elevation={4}
         sx={{
-          maxWidth: 750,
-          mx: "auto",
-          borderRadius: 3,
-          mb: 2,
-          boxShadow: 2,
-        }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ bgcolor: "#f1f7fc" }}>
-              <TableCell sx={{ fontWeight: 700, fontSize: 16 }}>মেম্বার</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 16 }}>মিল</TableCell>
-              <TableCell align="center" sx={{ fontWeight: 700, fontSize: 16 }}>কস্ট (টাকা)</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {members.map(m => (
-              <TableRow key={m.id}>
-                <TableCell sx={{ minWidth: 170, fontWeight: 500 }}>{m.name}</TableCell>
-                <TableCell align="center">{memberMeals[m.id] || 0}</TableCell>
-                <TableCell align="center">
-                  <Typography sx={{ fontWeight: 600, color: "#1976d2" }}>
-                    {distributedCost[m.id] || 0} টাকা
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ))}
-            {members.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={3} align="center" sx={{ color: "#888" }}>
-                  কোনো সদস্য নেই।
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+          p: 0,
+          borderRadius: 4,
+          border: '1px solid #e0e0e0',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Top divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
 
-      {/* Footer notes */}
-      <Typography sx={{ color: "gray", mt: 2, textAlign: "center" }}>
-        <b>নোট:</b> সব কস্ট যোগ করলে মোট বাজারের সাথে একদম মিলবে।  
-        কারো কস্ট ১ টাকা বেশি বা কম থাকলেও, সবাইকে একদম সমানভাবে ভাগ করা হয়েছে।
-      </Typography>
-      <Typography sx={{ color: "green", mt: 1, fontWeight: 700, textAlign: "center" }}>
-        মোট কস্ট যোগফল: {totalCost} টাকা (একদম সঠিক)
-      </Typography>
+        {/* Title */}
+        <Box px={3} pt={2} pb={1}>
+          <Typography variant="h6" fontWeight={700} color="primary">
+            📊 মিল রেট হিসাব
+          </Typography>
+        </Box>
+
+        {/* Summary cards */}
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={2}
+          sx={{
+            px: 3, pb: 2,
+            justifyContent: { md: "center" },
+            alignItems: { xs: "stretch", md: "center" },
+          }}
+        >
+          <Card sx={{ minWidth: 170, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 0, flex: 1 }}>
+            <CardContent>
+              <Typography fontSize={15}>📅 মাস</Typography>
+              <Typography variant="h6" color="primary">{currentMonth || "নির্বাচিত নয়"}</Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ minWidth: 170, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 0, flex: 1 }}>
+            <CardContent>
+              <Typography fontSize={15}>💸 মোট বাজার</Typography>
+              <Typography variant="h6" color="secondary">{totalBazarInt} টাকা</Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ minWidth: 170, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 0, flex: 1 }}>
+            <CardContent>
+              <Typography fontSize={15}>🍽️ মোট মিল</Typography>
+              <Typography variant="h6" color="success.main">{totalMealInt} টি</Typography>
+            </CardContent>
+          </Card>
+          <Card sx={{ minWidth: 170, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 0, flex: 1 }}>
+            <CardContent>
+              <Typography fontSize={15}>⚖️ প্রতি মিল রেট</Typography>
+              <Typography variant="h6" color="info.main">{mealRate} টাকা</Typography>
+            </CardContent>
+          </Card>
+        </Stack>
+
+        {/* Left/Right Divider (table border) */}
+        <Box
+          sx={{
+            px: 0,
+            borderLeft: '2px solid #1976d2',
+            borderRight: '2px solid #1976d2',
+            borderRadius: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {/* Subtitle */}
+          <Typography variant="subtitle1" fontWeight={700} sx={{ px: 3, mt: 1, mb: 1, textAlign: "left" }}>
+            👤 মেম্বার অনুযায়ী হিসাব
+          </Typography>
+
+          {/* Table */}
+          <TableContainer component={Box} sx={{ mb: 1 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700, fontSize: 16 }}>মেম্বার</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 16 }}>মিল</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, fontSize: 16 }}>কস্ট (টাকা)</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {members.map(m => (
+                  <TableRow key={m.id}>
+                    <TableCell sx={{ minWidth: 120, fontWeight: 500 }}>{m.name}</TableCell>
+                    <TableCell align="center">{memberMeals[m.id] || 0}</TableCell>
+                    <TableCell align="center">
+                      <Typography sx={{ fontWeight: 600, color: "#1976d2" }}>
+                        {distributedCost[m.id] || 0} টাকা
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {members.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} align="center" sx={{ color: "#888" }}>
+                      কোনো সদস্য নেই।
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+
+        {/* Bottom divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
+
+        {/* Footer notes */}
+        <Box px={3} py={2}>
+          <Typography sx={{ color: "gray" }}>
+            <b>নোট:</b> সব কস্ট যোগ করলে মোট বাজারের সাথে একদম মিলবে।  
+            কারো কস্ট ১ টাকা বেশি বা কম থাকলেও, সবাইকে একদম সমানভাবে ভাগ করা হয়েছে।
+          </Typography>
+          <Typography sx={{ color: "green", mt: 1, fontWeight: 700 }}>
+            মোট কস্ট যোগফল: {totalCost} টাকা (একদম সঠিক)
+          </Typography>
+        </Box>
+      </Paper>
     </Box>
   );
 }

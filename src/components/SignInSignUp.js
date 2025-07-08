@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useFirebaseAuth } from '../FirebaseAuthContext';
 import { useNavigate } from 'react-router-dom';
+import {
+  Paper, Box, Typography, Divider, TextField, Button
+} from '@mui/material';
 
 export default function SignInSignUp() {
   const { signup, signin } = useFirebaseAuth();
@@ -27,103 +30,155 @@ export default function SignInSignUp() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #e3f2fd 0%, #c8e6c9 100%)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }}>
-      <div style={{
-        background: "#fff",
-        padding: "36px 28px",
-        borderRadius: "18px",
-        boxShadow: "0 4px 32px #0001",
-        width: "100%",
-        maxWidth: "380px",
-        textAlign: "center"
-      }}>
-        <h2 style={{
-          fontWeight: 700,
-          fontSize: "1.7rem",
-          color: "#1976d2",
-          marginBottom: "18px"
-        }}>
-          {isSignup ? 'নতুন অ্যাকাউন্ট তৈরি করুন' : 'সাইন ইন করুন'} <span style={{ color: "#666", fontSize: "1rem" }}>- মেস ম্যানেজার</span>
-        </h2>
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="আপনার ইমেইল দিন"
-            required
-            style={{
-              padding: "11px",
-              borderRadius: "7px",
-              border: "1px solid #b0bec5",
-              outline: "none",
-              fontSize: "1rem"
-            }}
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="পাসওয়ার্ড দিন"
-            required
-            style={{
-              padding: "11px",
-              borderRadius: "7px",
-              border: "1px solid #b0bec5",
-              outline: "none",
-              fontSize: "1rem"
-            }}
-          />
-          <button
-            type="submit"
-            style={{
-              background: "#1976d2",
-              color: "#fff",
-              border: "none",
-              borderRadius: "7px",
-              padding: "11px 0",
-              fontWeight: 600,
-              fontSize: "1rem",
-              cursor: "pointer",
-              marginTop: "5px",
-              transition: "background .2s"
-            }}
-            onMouseOver={e => e.currentTarget.style.background = "#1565c0"}
-            onMouseOut={e => e.currentTarget.style.background = "#1976d2"}
+    <Box
+      minHeight="100vh"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      sx={{
+        background: "linear-gradient(135deg, #e2f7f2 0%, #c8e6c9 100%)"
+      }}
+    >
+      <Paper
+        elevation={5}
+        sx={{
+          p: 0,
+          borderRadius: 4,
+          minWidth: 320,
+          maxWidth: 390,
+          width: "100%",
+          boxShadow: 3,
+          border: "1px solid #e0e0e0",
+          overflow: 'hidden',
+        }}
+      >
+        {/* Top divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: '#3bb59a' }} />
+        <Box px={3} pt={3} pb={1} textAlign="center">
+          <Typography
+            variant="h6"
+            fontWeight={700}
+            color="primary"
+            gutterBottom
+            sx={{ letterSpacing: 0.2, mb: 0.5 }}
           >
-            {isSignup ? 'রেজিস্টার করুন' : 'সাইন ইন'}
-          </button>
-        </form>
-        <button
-          type="button"
-          onClick={() => setIsSignup(!isSignup)}
-          style={{
-            marginTop: "18px",
-            background: "none",
-            border: "none",
-            color: "#1976d2",
-            textDecoration: "underline",
-            cursor: "pointer",
-            fontSize: "1rem"
+            {isSignup ? 'নতুন অ্যাকাউন্ট তৈরি করুন' : 'সাইন ইন করুন'}
+          </Typography>
+          <Typography fontSize="1rem" color="#555">
+            মেস ম্যানেজার
+          </Typography>
+        </Box>
+        {/* Left/right divider (form section) */}
+        <Box
+          sx={{
+            px: 0,
+            borderLeft: '2px solid #3bb59a',
+            borderRight: '2px solid #3bb59a',
+            borderRadius: 0,
+            overflow: 'hidden',
+            bgcolor: "#f9fbfd"
           }}
         >
-          {isSignup ? 'আগে থেকেই অ্যাকাউন্ট আছে?' : 'নতুন অ্যাকাউন্ট তৈরি করুন'}
-        </button>
-        <p style={{
-          marginTop: "16px",
-          color: msg.includes('ত্রুটি') ? "#d32f2f" : "#388e3c",
-          fontWeight: 500,
-          minHeight: "18px"
-        }}>
-          {msg}
-        </p>
-      </div>
-    </div>
+          <Box px={3} pt={2} pb={1.5}>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "19px" }}>
+              <TextField
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                label="আপনার ইমেইল"
+                required
+                autoFocus
+                size="medium"
+                sx={{
+                  bgcolor: "#fff",
+                  borderRadius: 1,
+                }}
+              />
+              <TextField
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                label="পাসওয়ার্ড"
+                required
+                size="medium"
+                sx={{
+                  bgcolor: "#fff",
+                  borderRadius: 1,
+                }}
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                sx={{
+                  background: "#3bb59a",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  borderRadius: 2,
+                  py: 1.2,
+                  mt: 0.5,
+                  boxShadow: 1,
+                  '&:hover': {
+                    background: "#2e907a"
+                  }
+                }}
+              >
+                {isSignup ? 'রেজিস্টার করুন' : 'সাইন ইন'}
+              </Button>
+            </form>
+            <Button
+              variant="text"
+              fullWidth
+              onClick={() => setIsSignup(!isSignup)}
+              sx={{
+                mt: 2,
+                color: "#3bb59a",
+                textDecoration: "underline",
+                fontSize: "1rem",
+                fontWeight: 500,
+                borderRadius: 1
+              }}
+            >
+              {isSignup ? 'আগে থেকেই অ্যাকাউন্ট আছে?' : 'নতুন অ্যাকাউন্ট তৈরি করুন'}
+            </Button>
+            <Typography
+              sx={{
+                mt: 2,
+                color: msg.includes('ত্রুটি') ? "#d32f2f" : "#388e3c",
+                fontWeight: 500,
+                minHeight: "18px",
+                textAlign: "center"
+              }}
+            >
+              {msg}
+            </Typography>
+          </Box>
+        </Box>
+        {/* Bottom divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: '#3bb59a' }} />
+        {/* Footer note */}
+        <Box px={3} py={1.2} sx={{ background: "#f9fbfd" }}>
+          <Typography sx={{ color: "gray", fontSize: 13, textAlign: "center" }}>
+            আপনার তথ্য নিরাপদ এবং শুধুমাত্র এই অ্যাপ ব্যবহারের জন্য।
+          </Typography>
+        </Box>
+        {/* Created by credit (consistent system style) */}
+        <Box pb={2} sx={{ background: "#f9fbfd" }}>
+          <Typography
+            sx={{
+              textAlign: "center",
+              color: "#3bb59a",
+              fontWeight: 500,
+              fontSize: 13,
+              mt: 0.5,
+              letterSpacing: 0.2
+            }}
+          >
+            Created by <span style={{ fontWeight: 700 }}>Tanjil</span>
+          </Typography>
+        </Box>
+      </Paper>
+    </Box>
   );
 }

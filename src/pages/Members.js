@@ -7,13 +7,10 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  // writeBatch,
-  // query,
-  // where
 } from 'firebase/firestore';
 import {
   Card, Typography, Box, Grid, Button, TextField,
-  IconButton, Stack, Tooltip, Avatar, Paper
+  IconButton, Stack, Tooltip, Avatar, Paper, Divider
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -81,149 +78,187 @@ export default function Members({ showToast }) {
   const getInitial = name => name ? name[0].toUpperCase() : "?";
 
   return (
-    <Box sx={{ minHeight: "90vh" }}>
-      {/* Left-aligned main title */}
-      <Box sx={{ width: "100%", maxWidth: 900, mx: "auto" }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 2, textAlign: "left" }}>
-          👥 সদস্য তালিকা
-        </Typography>
-      </Box>
+    <Box maxWidth="md" mx="auto" mt={4} px={2}>
+      <Paper
+        elevation={4}
+        sx={{
+          p: 0,
+          borderRadius: 5,
+          border: '1px solid #e0e0e0',
+          overflow: "hidden",
+        }}
+      >
+        {/* Top divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
 
-      {/* Input Form Centered */}
-      <Grid container justifyContent="center">
-        <Grid item xs={12} md={7}>
-          <Card sx={{ mb: 3, p: 2, borderRadius: 4, bgcolor: "#f7faff", boxShadow: 3 }}>
-            <form onSubmit={handleSubmit}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <TextField
-                  label="নাম লিখুন"
-                  variant="outlined"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  size="small"
-                  sx={{ flex: 1 }}
-                  required
-                />
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={editId ? <SaveIcon /> : <PersonAddAlt1Icon />}
-                  color={editId ? "success" : "primary"}
-                  sx={{ boxShadow: 1, borderRadius: 2 }}
-                >
-                  {editId ? "আপডেট" : "যোগ করুন"}
-                </Button>
-              </Stack>
-            </form>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Member List Table Centered */}
-      <Grid container justifyContent="center">
-        <Grid item xs={12} md={7}>
-          <Paper
-            elevation={4}
-            sx={{
-              borderRadius: 5,
-              overflow: "hidden",
-              bgcolor: "#fff",
-              px: 0,
-              py: 0,
-            }}
+        {/* Title */}
+        <Box px={3} pt={2} pb={1}>
+          <Typography
+            variant="h6"
+            fontWeight={700}
+            color="primary"
           >
-            {/* Header */}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                bgcolor: "#e3f0ff",
-                px: 4,
-                py: 2.2,
-                borderBottom: "1.5px solid #dde7f8",
-              }}
-            >
-              <Box sx={{ flex: 2, fontWeight: 700, fontSize: 18 }}>নাম</Box>
-              <Box sx={{ flex: 1, fontWeight: 700, fontSize: 18, textAlign: "center" }}>একশন</Box>
-            </Box>
+            👥 সদস্য তালিকা
+          </Typography>
+        </Box>
 
-            {/* Member rows */}
-            {members.length === 0 && (
-              <Box sx={{ p: 4, textAlign: "center", color: "#777" }}>কোনো সদস্য নেই!</Box>
-            )}
-            <Box>
-              {members.map((m, i) => (
+        {/* Left/Right divider */}
+        <Box
+          sx={{
+            px: 0,
+            borderLeft: '2px solid #1976d2',
+            borderRight: '2px solid #1976d2',
+            borderRadius: 0,
+            overflow: 'hidden',
+            pb: 4,
+          }}
+        >
+          {/* Input Form Centered */}
+          <Grid container justifyContent="center" sx={{ mb: 2, mt: 1 }}>
+            <Grid item xs={12} md={8}>
+              <Card sx={{ mb: 2, p: 2, borderRadius: 3, bgcolor: "#f7faff", boxShadow: 1 }}>
+                <form onSubmit={handleSubmit}>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <TextField
+                      label="নাম লিখুন"
+                      variant="outlined"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      size="small"
+                      sx={{ flex: 1 }}
+                      required
+                    />
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      startIcon={editId ? <SaveIcon /> : <PersonAddAlt1Icon />}
+                      color={editId ? "success" : "primary"}
+                      sx={{ boxShadow: 1, borderRadius: 2 }}
+                    >
+                      {editId ? "আপডেট" : "যোগ করুন"}
+                    </Button>
+                  </Stack>
+                </form>
+              </Card>
+            </Grid>
+          </Grid>
+
+          {/* Member List Table Centered */}
+          <Grid container justifyContent="center">
+            <Grid item xs={12} md={8}>
+              <Paper
+                elevation={0}
+                sx={{
+                  borderRadius: 4,
+                  overflow: "hidden",
+                  bgcolor: "#fff",
+                  px: 0,
+                  py: 0,
+                  mb: 3
+                }}
+              >
+                {/* Header */}
                 <Box
-                  key={m.id}
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
+                    bgcolor: "#e3f0ff",
                     px: 4,
                     py: 2.2,
-                    bgcolor: "#fff",
-                    borderBottom: i < members.length - 1 ? "1px solid #f1f1f7" : "none",
-                    borderRadius: 0,
-                    boxShadow: 0,
-                    transition: "background 0.15s, box-shadow 0.2s",
-                    "&:hover": {
-                      background: "#f4faff",
-                      boxShadow: 2,
-                    },
+                    borderBottom: "1.5px solid #dde7f8",
                   }}
                 >
-                  {/* Avatar + name */}
-                  <Box sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    minWidth: 0,
-                    pr: 5,
-                  }}>
-                    <Avatar sx={{
-                      bgcolor: "#1976d2",
-                      width: 44, height: 44, fontWeight: 700, mr: 2, fontSize: 22
-                    }}>
-                      {getInitial(m.name)}
-                    </Avatar>
-                    <Typography sx={{ fontSize: 18, fontWeight: 500, whiteSpace: 'nowrap' }}>
-                      {m.name}
-                    </Typography>
-                  </Box>
-                  {/* Actions */}
-                  <Box sx={{ minWidth: 100, textAlign: "center" }}>
-                    <Stack direction="row" spacing={2} justifyContent="center">
-                      <Tooltip title="এডিট">
-                        <IconButton
-                          color="primary"
-                          sx={{
-                            bgcolor: "#e3f0ff",
-                            "&:hover": { bgcolor: "#b4d5fa" }
-                          }}
-                          onClick={() => handleEdit(m)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="ডিলিট">
-                        <IconButton
-                          color="error"
-                          sx={{
-                            bgcolor: "#fff0f0",
-                            "&:hover": { bgcolor: "#fddada" }
-                          }}
-                          onClick={() => setConfirmState({ show: true, id: m.id, name: m.name })}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  </Box>
+                  <Box sx={{ flex: 2, fontWeight: 700, fontSize: 18 }}>নাম</Box>
+                  <Box sx={{ flex: 1, fontWeight: 700, fontSize: 18, textAlign: "center" }}>একশন</Box>
                 </Box>
-              ))}
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
+
+                {/* Member rows */}
+                {members.length === 0 && (
+                  <Box sx={{ p: 4, textAlign: "center", color: "#777" }}>কোনো সদস্য নেই!</Box>
+                )}
+                <Box>
+                  {members.map((m, i) => (
+                    <Box
+                      key={m.id}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        px: 4,
+                        py: 2.2,
+                        bgcolor: "#fff",
+                        borderBottom: i < members.length - 1 ? "1px solid #f1f1f7" : "none",
+                        borderRadius: 0,
+                        boxShadow: 0,
+                        transition: "background 0.15s, box-shadow 0.2s",
+                        "&:hover": {
+                          background: "#f4faff",
+                          boxShadow: 2,
+                        },
+                      }}
+                    >
+                      {/* Avatar + name */}
+                      <Box sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        minWidth: 0,
+                        pr: 5,
+                      }}>
+                        <Avatar sx={{
+                          bgcolor: "#1976d2",
+                          width: 44, height: 44, fontWeight: 700, mr: 2, fontSize: 22
+                        }}>
+                          {getInitial(m.name)}
+                        </Avatar>
+                        <Typography sx={{ fontSize: 18, fontWeight: 500, whiteSpace: 'nowrap' }}>
+                          {m.name}
+                        </Typography>
+                      </Box>
+                      {/* Actions */}
+                      <Box sx={{ minWidth: 100, textAlign: "center" }}>
+                        <Stack direction="row" spacing={2} justifyContent="center">
+                          <Tooltip title="এডিট">
+                            <IconButton
+                              color="primary"
+                              sx={{
+                                bgcolor: "#e3f0ff",
+                                "&:hover": { bgcolor: "#b4d5fa" }
+                              }}
+                              onClick={() => handleEdit(m)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="ডিলিট">
+                            <IconButton
+                              color="error"
+                              sx={{
+                                bgcolor: "#fff0f0",
+                                "&:hover": { bgcolor: "#fddada" }
+                              }}
+                              onClick={() => setConfirmState({ show: true, id: m.id, name: m.name })}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+        {/* Bottom divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
+        {/* Footer note */}
+        <Box px={3} py={2}>
+          <Typography sx={{ color: "gray" }}>
+            <b>নোট:</b> সদস্য যোগ বা ডিলিট করার পর রিপোর্ট/রেট/মিল/খরচ সব অটো আপডেট হবে।
+          </Typography>
+        </Box>
+      </Paper>
 
       <ConfirmDialog
         show={confirmState.show}

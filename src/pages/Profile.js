@@ -1,18 +1,31 @@
 import React, { useState } from 'react';
 import { useFirebaseAuth } from '../FirebaseAuthContext';
+import {
+  Paper,
+  Divider,
+  Box,
+  Typography,
+  Stack,
+  Avatar,
+  TextField,
+  Button,
+} from '@mui/material';
 import { getAuth, updateProfile, updatePassword, sendPasswordResetEmail } from 'firebase/auth';
 
-export default function Profile({ showToast }) { // <<== add showToast
+export default function Profile({ showToast }) {
   const { user } = useFirebaseAuth();
-  const auth = getAuth(); // ✅ অবশ্যই এটাকে ব্যবহার করো!
+  const auth = getAuth();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
-  // old local state এখন লাগবে না, showToast দিয়েই করো
   const [newPassword, setNewPassword] = useState('');
 
-  if (!user) return <div>কোনো ইউজার নেই!</div>;
+  if (!user) return (
+    <Box mt={8} textAlign="center">
+      <Typography color="error" variant="h6">কোনো ইউজার নেই!</Typography>
+    </Box>
+  );
 
-  // নাম/ছবি লিঙ্ক update
+  // Profile Update
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -24,7 +37,7 @@ export default function Profile({ showToast }) { // <<== add showToast
     }
   };
 
-  // Password change
+  // Password Change
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (!newPassword || newPassword.length < 6) {
@@ -57,66 +70,124 @@ export default function Profile({ showToast }) { // <<== add showToast
   };
 
   return (
-    <div style={{ maxWidth: 370, margin: '0 auto' }}>
-      <h2>👤 ইউজার প্রোফাইল</h2>
-      <div style={{ textAlign: 'center', marginBottom: 15 }}>
-        <img
-          src={photoURL || '/default-avatar.png'}
-          alt="profile"
-          width={90}
-          height={90}
-          style={{ borderRadius: '50%', objectFit: 'cover', background: '#e3e3e3' }}
-        />
-      </div>
-      <form onSubmit={handleSubmit}>
-        <label>নাম:</label>
-        <input
-          type="text"
-          value={displayName}
-          onChange={e => setDisplayName(e.target.value)}
-          style={{ width: '100%', padding: 7, marginBottom: 10 }}
-        />
-        <label>ছবির লিঙ্ক (URL):</label>
-        <input
-          type="text"
-          value={photoURL}
-          onChange={e => setPhotoURL(e.target.value)}
-          style={{ width: '100%', padding: 7, marginBottom: 10 }}
-        />
-        <div style={{ marginBottom: 10, color: '#555', fontSize: 13 }}>
-          * চাইলে Google Drive/Photos/Dropbox/Imgur থেকে public image link দিন।
-        </div>
-        <button type="submit" style={{ padding: '8px 20px', borderRadius: 4 }}>প্রোফাইল আপডেট</button>
-      </form>
-      <hr />
-
-      {/* Password Change Option */}
-      <div style={{ margin: '20px 0', padding: 12, border: '1px solid #eee', borderRadius: 8 }}>
-        <b>🔑 পাসওয়ার্ড পরিবর্তন</b>
-        <form onSubmit={handlePasswordChange}>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={e => setNewPassword(e.target.value)}
-            placeholder="নতুন পাসওয়ার্ড (৬+ অক্ষর)"
-            style={{ width: '100%', padding: 7, margin: '8px 0' }}
+    <Box maxWidth={420} mx="auto" mt={6}>
+      <Paper
+        elevation={4}
+        sx={{
+          p: 0,
+          borderRadius: 4,
+          border: '1px solid #e0e0e0',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Top Divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
+        {/* Header/Profile pic */}
+        <Box px={3} pt={3} pb={1} display="flex" flexDirection="column" alignItems="center">
+          <Avatar
+            src={photoURL || '/default-avatar.png'}
+            alt="profile"
+            sx={{
+              width: 90, height: 90, mb: 1, bgcolor: "#e3e3e3", border: "2px solid #1976d2"
+            }}
           />
-          <button type="submit" style={{ padding: '7px 14px', borderRadius: 4 }}>পরিবর্তন করুন</button>
-        </form>
-        <button
-          style={{
-            marginTop: 10, background: 'none', border: 'none', color: '#1976d2', textDecoration: 'underline', cursor: 'pointer'
+          <Typography variant="h6" fontWeight={700} color="primary">👤 ইউজার প্রোফাইল</Typography>
+        </Box>
+        {/* Left/Right Divider */}
+        <Box
+          sx={{
+            px: 0,
+            borderLeft: '2px solid #1976d2',
+            borderRight: '2px solid #1976d2',
+            borderRadius: 0,
+            overflow: 'hidden',
           }}
-          onClick={handlePasswordReset}
         >
-          পাসওয়ার্ড ভুলে গেছেন? Reset লিঙ্ক পাঠান
-        </button>
-      </div>
-      <hr />
-
-      <div>
-        <b>ইমেইল:</b> <br /> {user.email}
-      </div>
-    </div>
+          {/* Profile Edit Form */}
+          <Box component="form" onSubmit={handleSubmit} px={3} py={2}>
+            <TextField
+              label="নাম"
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
+              fullWidth
+              size="small"
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="ছবির লিঙ্ক (URL)"
+              value={photoURL}
+              onChange={e => setPhotoURL(e.target.value)}
+              fullWidth
+              size="small"
+              sx={{ mb: 1 }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+              * চাইলে Google Drive/Photos/Dropbox/Imgur থেকে public image link দিন।
+            </Typography>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              size="medium"
+              sx={{ borderRadius: 2, minWidth: 160, mt: 1 }}
+              fullWidth
+            >
+              প্রোফাইল আপডেট
+            </Button>
+          </Box>
+          {/* Bottom Divider */}
+          <Divider sx={{ my: 0 }} />
+          {/* Password Change */}
+          <Box px={3} py={2}>
+            <Typography fontWeight={600} mb={1}>🔑 পাসওয়ার্ড পরিবর্তন</Typography>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              component="form"
+              onSubmit={handlePasswordChange}
+            >
+              <TextField
+                type="password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="নতুন পাসওয়ার্ড (৬+ অক্ষর)"
+                size="small"
+                fullWidth
+              />
+              <Button
+                type="submit"
+                variant="contained"
+                color="secondary"
+                sx={{ borderRadius: 2, minWidth: 120 }}
+              >
+                পরিবর্তন করুন
+              </Button>
+            </Stack>
+            <Button
+              variant="text"
+              sx={{
+                mt: 1,
+                color: 'primary.main',
+                textDecoration: 'underline',
+                fontSize: 14,
+                px: 0,
+                minWidth: 0,
+              }}
+              onClick={handlePasswordReset}
+            >
+              পাসওয়ার্ড ভুলে গেছেন? Reset লিঙ্ক পাঠান
+            </Button>
+          </Box>
+          <Divider sx={{ my: 0 }} />
+          {/* User Email */}
+          <Box px={3} py={2}>
+            <Typography variant="subtitle2" fontWeight={600}>ইমেইল:</Typography>
+            <Typography variant="body2">{user.email}</Typography>
+          </Box>
+        </Box>
+        {/* Bottom Divider */}
+        <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
+      </Paper>
+    </Box>
   );
 }
