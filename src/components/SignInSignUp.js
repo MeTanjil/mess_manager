@@ -8,6 +8,7 @@ import {
 export default function SignInSignUp() {
   const { signup, signin } = useFirebaseAuth();
   const [isSignup, setIsSignup] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState('');
@@ -17,8 +18,9 @@ export default function SignInSignUp() {
     e.preventDefault();
     try {
       if (isSignup) {
-        await signup(email, password);
+        await signup(email, password, name);
         setMsg("অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!");
+        setName('');
       } else {
         await signin(email, password);
         setMsg("সাইন ইন সফল হয়েছে!");
@@ -81,6 +83,20 @@ export default function SignInSignUp() {
         >
           <Box px={3} pt={2} pb={1.5}>
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "19px" }}>
+              {isSignup && (
+                <TextField
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  label="আপনার নাম"
+                  required
+                  size="medium"
+                  sx={{
+                    bgcolor: "#fff",
+                    borderRadius: 1,
+                  }}
+                />
+              )}
               <TextField
                 type="email"
                 value={email}

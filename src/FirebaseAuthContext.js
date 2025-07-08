@@ -6,7 +6,10 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  updateProfile,
 } from 'firebase/auth';
+
+import { getFirestore, setDoc, doc } from 'firebase/firestore';
 
 // 🔑 Firebase project-er config (eta একবারই লাগবে)
 const firebaseConfig = {
@@ -22,6 +25,7 @@ const firebaseConfig = {
 // 🔥 একবার initialize করে ফেলো
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app); // Firestore init
 
 // 🔒 Context setup
 const AuthContext = createContext();
@@ -46,9 +50,26 @@ export function FirebaseAuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  // লগইন/সাইনআপ/লগআউট ফাংশন
-  const signup = (email, password) => createUserWithEmailAndPassword(auth, email, password);
+  // 🔹 SIGN UP — Firestore integration সহ
+  const signup = async (email, password, displayName) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    // Auth profile-এ displayName সেট (optional)
+    if (displayName) {
+      await updateProfile(userCredential.user, { displayName });
+    }
+    // Firestore users collection-এ আলাদা doc তৈরি
+    await setDoc(doc(db, 'users', userCredential.user.uid), {
+      uid: userCredential.user.uid,
+      email,
+      displayName: displayName || "",
+      createdAt: new Date(),
+    });
+    return userCredential.user;
+  };
+
+  // 🔹 SIGN IN
   const signin = (email, password) => signInWithEmailAndPassword(auth, email, password);
+  // 🔹 SIGN OUT
   const signout = () => signOut(auth);
 
   // যদি এখনো user চেক হচ্ছে, তখন "লোড হচ্ছে..." দেখাবে
