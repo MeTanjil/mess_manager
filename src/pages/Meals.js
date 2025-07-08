@@ -21,71 +21,52 @@ import CloseIcon from '@mui/icons-material/Close';
 
 const db = getFirestore();
 
-/**
- * Completely remove a member and all related data
- */
+// Completely remove a member and all related data
 async function deleteMemberCompletely(memberId, memberName) {
   // 1. Delete member from 'members'
   await deleteDoc(doc(db, 'members', memberId));
 
-  // 2. Remove from all meals
+  // 2. Remove from all meals (if meals object empty, delete doc)
   const mealSnap = await getDocs(collection(db, 'meals'));
-  const mealBatch = writeBatch(db);
-  mealSnap.forEach((docu) => {
+  for (const docu of mealSnap.docs) {
     const data = docu.data();
-    if (data.meals && data.meals[memberId]) {
+    if (data.meals && Object.keys(data.meals).includes(memberId)) {
       const newMeals = { ...data.meals };
       delete newMeals[memberId];
       if (Object.keys(newMeals).length === 0) {
-        mealBatch.delete(doc(db, 'meals', docu.id));
+        await deleteDoc(doc(db, 'meals', docu.id));
       } else {
-        mealBatch.update(doc(db, 'meals', docu.id), { meals: newMeals });
+        await updateDoc(doc(db, 'meals', docu.id), { meals: newMeals });
       }
     }
-  });
-  await mealBatch.commit();
-
-  // Fallback: Delete any meal doc with empty meals object (in case batch missed any)
-  const mealSnap2 = await getDocs(collection(db, 'meals'));
-  await Promise.all(mealSnap2.docs.map(async (docu) => {
-    const data = docu.data();
-    if (data.meals && Object.keys(data.meals).length === 0) {
-      await deleteDoc(doc(db, 'meals', docu.id));
-    }
-  }));
+  }
 
   // 3. Remove from all expenses (payerId)
   const expSnap = await getDocs(collection(db, 'expenses'));
-  const expBatch = writeBatch(db);
-  expSnap.forEach(docu => {
+  for (const docu of expSnap.docs) {
     const data = docu.data();
     if (data.payerId === memberId) {
-      expBatch.delete(doc(db, 'expenses', docu.id));
+      await deleteDoc(doc(db, 'expenses', docu.id));
     }
-  });
-  await expBatch.commit();
+  }
 
   // 4. Remove from all deposits (by name)
   const depSnap = await getDocs(collection(db, 'deposits'));
-  const depBatch = writeBatch(db);
-  depSnap.forEach(docu => {
+  for (const docu of depSnap.docs) {
     const data = docu.data();
     if (data.member === memberName) {
-      depBatch.delete(doc(db, 'deposits', docu.id));
+      await deleteDoc(doc(db, 'deposits', docu.id));
     }
-  });
-  await depBatch.commit();
+  }
 
   // 5. Remove from all bazar (by name)
   const bazarSnap = await getDocs(collection(db, 'bazar'));
-  const bazarBatch = writeBatch(db);
-  bazarSnap.forEach(docu => {
+  for (const docu of bazarSnap.docs) {
     const data = docu.data();
     if (data.person === memberName) {
-      bazarBatch.delete(doc(db, 'bazar', docu.id));
+      await deleteDoc(doc(db, 'bazar', docu.id));
     }
-  });
-  await bazarBatch.commit();
+  }
 }
 
 export default function Meals({ showToast }) {
@@ -98,7 +79,7 @@ export default function Meals({ showToast }) {
   const [confirmState, setConfirmState] = useState({ show: false, id: null, date: "" });
   const [deleteMemberDialog, setDeleteMemberDialog] = useState({ show: false, memberId: null, memberName: '' });
 
-  // Helper: id to name
+  // id to name
   const getMemberName = useCallback((id) => {
     const m = members.find(m => m.id === id);
     return m ? m.name : id;
@@ -129,13 +110,22 @@ export default function Meals({ showToast }) {
   const handleDelete = async (mealId) => {
     await deleteDoc(doc(db, 'meals', mealId));
     await fetchSavedMeals();
-    showToast && showToast("মিল ডিলিট হয়েছে!", "success");
+    showToast && showToast("মিল ডিলিট হয়েছে!", "success");
   };
 
   // Start Edit
   const handleEdit = (meal) => {
     setEditingMealId(meal.id);
-    setEditData(meal.meals);
+    // meal.meals থেকে সদস্য id-wise object, সংখ্যা হিসেবে set
+    const asNumbers = {};
+    for (const [mid, val] of Object.entries(meal.meals)) {
+      asNumbers[mid] = {
+        breakfast: Number(val.breakfast) || 0,
+        lunch: Number(val.lunch) || 0,
+        dinner: Number(val.dinner) || 0
+      };
+    }
+    setEditData(asNumbers);
     setError('');
     showToast && showToast("এডিট মোডে আছেন!", "info");
   };
@@ -146,16 +136,26 @@ export default function Meals({ showToast }) {
       ...prev,
       [memberId]: {
         ...prev[memberId],
-        [type]: value
+        [type]: value === '' ? '' : Number(value)
       }
     }));
   };
 
   // Save Edit
   const handleSaveEdit = async () => {
-    const mealEntered = Object.values(editData).some(
-      m => Number(m.breakfast) > 0 || Number(m.lunch) > 0 || Number(m.dinner) > 0
-    );
+    // শুধু যাদের কোনো মিল আছে তাদেরই save করবে
+    const cleanedEditData = {};
+    for (const [mid, val] of Object.entries(editData)) {
+      const hasMeal = Number(val.breakfast) > 0 || Number(val.lunch) > 0 || Number(val.dinner) > 0;
+      if (hasMeal) {
+        cleanedEditData[mid] = {
+          breakfast: Number(val.breakfast) || 0,
+          lunch: Number(val.lunch) || 0,
+          dinner: Number(val.dinner) || 0
+        };
+      }
+    }
+    const mealEntered = Object.keys(cleanedEditData).length > 0;
     if (!mealEntered) {
       setError("কমপক্ষে একজনের জন্য অন্তত একবেলা meal লিখুন!");
       showToast && showToast("কমপক্ষে একজনের জন্য meal দিতে হবে!", "error");
@@ -163,17 +163,15 @@ export default function Meals({ showToast }) {
     }
 
     const docRef = doc(db, 'meals', editingMealId);
-    await updateDoc(docRef, {
-      meals: editData
-    });
+    await updateDoc(docRef, { meals: cleanedEditData });
     await fetchSavedMeals();
     setEditingMealId(null);
     setEditData({});
     setError('');
-    showToast && showToast("মিল আপডেট হয়েছে!", "success");
+    showToast && showToast("মিল আপডেট হয়েছে!", "success");
   };
 
-  // Member Delete Modal show function (you can place this where you want, or use from parent)
+  // Member Delete Modal show function (যদি দরকার হয় parent থেকে কল)
   const openDeleteMember = (memberId, memberName) => {
     setDeleteMemberDialog({ show: true, memberId, memberName });
   };
@@ -184,7 +182,7 @@ export default function Meals({ showToast }) {
     await fetchMembers();
     await fetchSavedMeals();
     setDeleteMemberDialog({ show: false, memberId: null, memberName: '' });
-    showToast && showToast("সদস্য এবং সংশ্লিষ্ট সব হিসাব ডিলিট হয়েছে!", "success");
+    showToast && showToast("সদস্য এবং সংশ্লিষ্ট সব হিসাব ডিলিট হয়েছে!", "success");
   };
 
   return (
@@ -201,7 +199,7 @@ export default function Meals({ showToast }) {
         <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
         <Box px={3} pt={2} pb={1}>
           <Typography variant="h6" fontWeight={700} color="primary">
-            📅 সেভকৃত মিল তালিকা ({currentMonth || "নির্বাচিত নয়"})
+            📅 সেভকৃত মিল তালিকা ({currentMonth || "নির্বাচিত নয়"})
           </Typography>
         </Box>
 
@@ -401,7 +399,7 @@ export default function Meals({ showToast }) {
                               </TableHead>
                               <TableBody>
                                 {Object.entries(meal.meals).map(([mid, mealObj]) => (
-                                  members.some(m => m.id === mid) && ( // only show if member exists
+                                  members.some(m => m.id === mid) && (
                                     <TableRow key={mid}>
                                       <TableCell>
                                         <b>{getMemberName(mid)}</b>

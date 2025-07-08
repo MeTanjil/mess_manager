@@ -51,10 +51,10 @@ export default function Members({ showToast }) {
       const ref = doc(db, 'members', editId);
       await updateDoc(ref, { name });
       setEditId(null);
-      showToast && showToast("সদস্য আপডেট হয়েছে!", "success");
+      showToast && showToast("সদস্য আপডেট হয়েছে!", "success");
     } else {
       await addDoc(collection(db, 'members'), { name });
-      showToast && showToast("নতুন সদস্য যোগ হয়েছে!", "success");
+      showToast && showToast("নতুন সদস্য যোগ হয়েছে!", "success");
     }
     setName('');
     fetchMembers();
@@ -67,27 +67,32 @@ export default function Members({ showToast }) {
     showToast && showToast("এডিট মোডে আছেন!", "info");
   };
 
-  // **Fast Cascade Batch Delete: Member + Meals + Bazar + Deposit + Expenses**
+  // Delete member + ALL relevant data (meals, expense, deposit, bazar)
   const handleDelete = async (id) => {
     const member = members.find(m => m.id === id);
     if (!member) return;
 
-    // Start batch
+    // Start batch for expenses, deposits, bazar, member doc (NOT for meals)
     const batch = writeBatch(db);
 
     // 1. Delete member doc
     batch.delete(doc(db, 'members', id));
 
-    // 2. Remove from meals (remove property from meals object)
+    // 2. Remove from meals (remove property from meals object in all docs)
     const mealSnap = await getDocs(collection(db, 'meals'));
-    mealSnap.forEach(d => {
+    for (const d of mealSnap.docs) {
       const mealsObj = d.data().meals || {};
-      if (mealsObj[id]) {
+      if (Object.keys(mealsObj).includes(id)) {
         const newMeals = { ...mealsObj };
         delete newMeals[id];
-        batch.update(doc(db, 'meals', d.id), { meals: newMeals });
+        try {
+          await updateDoc(doc(db, 'meals', d.id), { meals: newMeals });
+          console.log(`Deleted meals for memberId ${id} from doc ${d.id}`);
+        } catch (e) {
+          console.error(`Meal update failed for doc ${d.id} - memberId: ${id}`, e);
+        }
       }
-    });
+    }
 
     // 3. Delete all expenses (payerId === id)
     const expenseSnap = await getDocs(query(collection(db, 'expenses'), where('payerId', '==', id)));
@@ -234,7 +239,7 @@ export default function Members({ showToast }) {
                         display: "flex",
                         alignItems: "center",
                         minWidth: 0,
-                        pr: 24, // Maximum gap for clear separation
+                        pr: 24,
                       }}>
                         <Avatar sx={{
                           bgcolor: "#3bb59a",

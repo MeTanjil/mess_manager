@@ -33,11 +33,31 @@ export default function MealEntry({ showToast }) {
     return () => { unsub = true; };
   }, []);
 
+  // Meal value always number type
   const handleChange = (memberId, type, value) => {
     setMealData(prev => ({
       ...prev,
-      [memberId]: { ...prev[memberId], [type]: value }
+      [memberId]: {
+        ...prev[memberId],
+        [type]: value === '' ? '' : Number(value)
+      }
     }));
+  };
+
+  // Clean up: remove empty meals
+  const cleanMealData = (data) => {
+    const out = {};
+    Object.entries(data).forEach(([id, val]) => {
+      const hasMeal = Number(val.breakfast) > 0 || Number(val.lunch) > 0 || Number(val.dinner) > 0;
+      if (hasMeal) {
+        out[id] = {
+          breakfast: Number(val.breakfast) || 0,
+          lunch: Number(val.lunch) || 0,
+          dinner: Number(val.dinner) || 0
+        };
+      }
+    });
+    return out;
   };
 
   const handleSubmit = async (e) => {
@@ -52,9 +72,9 @@ export default function MealEntry({ showToast }) {
       return;
     }
 
-    const mealEntered = Object.values(mealData).some(
-      m => Number(m.breakfast) > 0 || Number(m.lunch) > 0 || Number(m.dinner) > 0
-    );
+    const cleanedData = cleanMealData(mealData);
+
+    const mealEntered = Object.keys(cleanedData).length > 0;
     if (!mealEntered) {
       showToast && showToast("কমপক্ষে একজনের জন্য অন্তত একবেলা মিল লিখুন!", "warning");
       return;
@@ -76,7 +96,7 @@ export default function MealEntry({ showToast }) {
       await addDoc(collection(db, 'meals'), {
         date,
         monthId: currentMonth,
-        meals: mealData
+        meals: cleanedData
       });
 
       setDate('');
