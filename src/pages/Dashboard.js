@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
 import {
-  Grid, Card, CardContent, Typography, Box, Divider, CircularProgress, Paper,
-  Table, TableHead, TableRow, TableCell, TableBody
+  Grid, Card, CardContent, Typography, Box, Divider, CircularProgress, Paper
 } from '@mui/material';
 
 const db = getFirestore();
@@ -167,41 +166,10 @@ export default function Dashboard() {
         {/* Bottom divider */}
         <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main', my: 3 }} />
 
-        {/* Memberwise Details Table */}
-        <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto', mb: 4 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, textAlign: 'left' }}>
-            👤 সদস্য অনুসারে বিস্তারিত:
-          </Typography>
-          <Paper sx={{ width: '100%', overflowX: 'auto', boxShadow: 1 }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ bgcolor: '#f1f7fc' }}>
-                  <TableCell sx={{ fontWeight: 700 }}>নাম</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="center">মোট জমা</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="center">মোট মিল</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="center">মিল খরচ</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }} align="center">মোট খরচ</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {members.map(m => (
-                  <TableRow key={m.id}>
-                    <TableCell>{m.name}</TableCell>
-                    <TableCell align="center">{memberDeposits[m.name] || 0} টাকা</TableCell>
-                    <TableCell align="center">{memberMeals[m.id] || 0}</TableCell>
-                    <TableCell align="center">{(memberMeals[m.id] || 0) * mealRate} টাকা</TableCell>
-                    <TableCell align="center">{(memberMeals[m.id] || 0) * mealRate} টাকা</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Paper>
-        </Box>
-
-        {/* Footer note */}
-        <Box px={3} py={2}>
+        {/* Note only (memberwise table removed) */}
+        <Box px={3} py={4}>
           <Typography sx={{ color: "gray" }}>
-            <b>নোট:</b> মোট রিপোর্ট দেখুন।
+            <b>নোট:</b> সকল হিসাব দেখার জন্য রিপোর্ট পেজে যান।
           </Typography>
         </Box>
       </Paper>
