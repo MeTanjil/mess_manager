@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   getFirestore,
   collection,
@@ -24,31 +24,35 @@ const db = getFirestore();
 
 export default function Bazar({ showToast }) {
   const [members, setMembers] = useState([]);
+  const [bazarList, setBazarList] = useState([]);
   const [date, setDate] = useState('');
   const [person, setPerson] = useState('');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [bazarList, setBazarList] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const { currentMonth } = useMonth();
   const [confirmState, setConfirmState] = useState({ show: false, id: null, date: '', person: '' });
 
-  useEffect(() => {
-    const fetchMembers = async () => {
-      const snapshot = await getDocs(collection(db, 'members'));
-      setMembers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    };
-    fetchMembers();
+  // fetch members - always up to date
+  const fetchMembers = useCallback(async () => {
+    const snapshot = await getDocs(collection(db, 'members'));
+    setMembers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   }, []);
 
-  useEffect(() => {
-    const fetchBazar = async () => {
-      const snapshot = await getDocs(collection(db, 'bazar'));
-      const allBazar = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setBazarList(allBazar.filter(b => b.monthId === currentMonth));
-    };
-    if (currentMonth) fetchBazar();
+  // fetch bazar - always up to date
+  const fetchBazar = useCallback(async () => {
+    const snapshot = await getDocs(collection(db, 'bazar'));
+    const allBazar = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setBazarList(allBazar.filter(b => b.monthId === currentMonth));
   }, [currentMonth]);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
+
+  useEffect(() => {
+    if (currentMonth) fetchBazar();
+  }, [currentMonth, fetchBazar]);
 
   const resetForm = () => {
     setDate('');
@@ -85,25 +89,19 @@ export default function Bazar({ showToast }) {
         description,
         monthId: currentMonth,
       });
-      setBazarList(prev =>
-        prev.map(b => b.id === editingId ? { ...b, date, person, amount: Number(amount), description } : b)
-      );
       showToast && showToast("বাজার এন্ট্রি আপডেট হয়েছে!", "success");
     } else {
-      const docRef = await addDoc(collection(db, 'bazar'), {
+      await addDoc(collection(db, 'bazar'), {
         date,
         person,
         amount: Number(amount),
         description,
         monthId: currentMonth,
       });
-      setBazarList(prev => [
-        ...prev,
-        { id: docRef.id, date, person, amount: Number(amount), description, monthId: currentMonth }
-      ]);
       showToast && showToast("বাজার এন্ট্রি সফলভাবে সংরক্ষণ হয়েছে!", "success");
     }
     resetForm();
+    fetchBazar();
   };
 
   const handleEdit = (bazar) => {
@@ -117,8 +115,8 @@ export default function Bazar({ showToast }) {
 
   const handleDelete = async (id) => {
     await deleteDoc(doc(db, 'bazar', id));
-    setBazarList(prev => prev.filter(b => b.id !== id));
     showToast && showToast("বাজার এন্ট্রি ডিলিট হয়েছে!", "success");
+    fetchBazar();
   };
 
   return (

@@ -1,48 +1,53 @@
 import React, { useEffect, useState } from 'react';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
-import { useFirebaseAuth } from '../FirebaseAuthContext'; // ← যদি auth context থাকে
+import { useFirebaseAuth } from '../FirebaseAuthContext'; // (ensure your auth context is working)
 
 const db = getFirestore();
 
 export default function MessNameBar() {
   const { currentMonth } = useMonth();
-  const { user } = useFirebaseAuth(); // ← ইউজার অবজেক্ট (uid)
+  const { user } = useFirebaseAuth(); // user object with uid
   const [messName, setMessName] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
-  // 🔄 Mess Name load
+  // Load Mess Name from Firestore
   useEffect(() => {
-    if (!user) return; // user না থাকলে ফাঁকা রাখো
+    if (!user || !currentMonth) return;
     const fetchMessName = async () => {
       const docRef = doc(db, 'messNames', `${user.uid}_${currentMonth}`);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        setMessName(docSnap.data().messName);
+        setMessName(docSnap.data().messName || '');
       } else {
         setMessName('');
       }
     };
     fetchMessName();
-  }, [currentMonth, user]);
+  }, [user, currentMonth]);
 
-  // Input always synced with messName
+  // Sync input with messName
   useEffect(() => {
     setInputValue(messName || '');
   }, [messName]);
 
-  // ✏️ Edit mode on
+  // Edit & Cancel
   const handleEdit = () => setEditMode(true);
   const handleCancel = () => setEditMode(false);
 
-  // ✅ Save button
+  // Save to Firestore
   const handleSave = async () => {
-    if (!user) return;
+    if (!user || !currentMonth) return;
     const value = inputValue.trim();
     await setDoc(
       doc(db, 'messNames', `${user.uid}_${currentMonth}`),
-      { messName: value, userId: user.uid, month: currentMonth, updatedAt: new Date() }
+      {
+        messName: value,
+        userId: user.uid,
+        month: currentMonth,
+        updatedAt: new Date()
+      }
     );
     setMessName(value);
     setEditMode(false);
@@ -59,7 +64,7 @@ export default function MessNameBar() {
       fontSize: '1.35rem',
       letterSpacing: '1px',
       gap: '10px',
-      background: 'linear-gradient(90deg, #f9e7ee 0%, #eaf6fb 100%)', // peach-pink to sky
+      background: 'linear-gradient(90deg, #f9e7ee 0%, #eaf6fb 100%)',
       borderRadius: '18px',
       border: '1.2px solid #f4d9ea',
       boxShadow: '0 2px 8px 0 #efe9f980',
@@ -67,7 +72,7 @@ export default function MessNameBar() {
     }}>
       <span style={{
         fontSize: '1.03rem',
-        color: '#a284a2', // lavender
+        color: '#a284a2',
         fontWeight: 600,
         marginRight: '5px',
         letterSpacing: '0.06em',

@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   getFirestore,
   collection,
   getDocs,
   deleteDoc,
   doc,
-  updateDoc
+  updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -20,6 +21,73 @@ import CloseIcon from '@mui/icons-material/Close';
 
 const db = getFirestore();
 
+/**
+ * Completely remove a member and all related data
+ */
+async function deleteMemberCompletely(memberId, memberName) {
+  // 1. Delete member from 'members'
+  await deleteDoc(doc(db, 'members', memberId));
+
+  // 2. Remove from all meals
+  const mealSnap = await getDocs(collection(db, 'meals'));
+  const mealBatch = writeBatch(db);
+  mealSnap.forEach((docu) => {
+    const data = docu.data();
+    if (data.meals && data.meals[memberId]) {
+      const newMeals = { ...data.meals };
+      delete newMeals[memberId];
+      if (Object.keys(newMeals).length === 0) {
+        mealBatch.delete(doc(db, 'meals', docu.id));
+      } else {
+        mealBatch.update(doc(db, 'meals', docu.id), { meals: newMeals });
+      }
+    }
+  });
+  await mealBatch.commit();
+
+  // Fallback: Delete any meal doc with empty meals object (in case batch missed any)
+  const mealSnap2 = await getDocs(collection(db, 'meals'));
+  await Promise.all(mealSnap2.docs.map(async (docu) => {
+    const data = docu.data();
+    if (data.meals && Object.keys(data.meals).length === 0) {
+      await deleteDoc(doc(db, 'meals', docu.id));
+    }
+  }));
+
+  // 3. Remove from all expenses (payerId)
+  const expSnap = await getDocs(collection(db, 'expenses'));
+  const expBatch = writeBatch(db);
+  expSnap.forEach(docu => {
+    const data = docu.data();
+    if (data.payerId === memberId) {
+      expBatch.delete(doc(db, 'expenses', docu.id));
+    }
+  });
+  await expBatch.commit();
+
+  // 4. Remove from all deposits (by name)
+  const depSnap = await getDocs(collection(db, 'deposits'));
+  const depBatch = writeBatch(db);
+  depSnap.forEach(docu => {
+    const data = docu.data();
+    if (data.member === memberName) {
+      depBatch.delete(doc(db, 'deposits', docu.id));
+    }
+  });
+  await depBatch.commit();
+
+  // 5. Remove from all bazar (by name)
+  const bazarSnap = await getDocs(collection(db, 'bazar'));
+  const bazarBatch = writeBatch(db);
+  bazarSnap.forEach(docu => {
+    const data = docu.data();
+    if (data.person === memberName) {
+      bazarBatch.delete(doc(db, 'bazar', docu.id));
+    }
+  });
+  await bazarBatch.commit();
+}
+
 export default function Meals({ showToast }) {
   const [members, setMembers] = useState([]);
   const [savedMeals, setSavedMeals] = useState([]);
@@ -28,40 +96,43 @@ export default function Meals({ showToast }) {
   const { currentMonth } = useMonth();
   const [error, setError] = useState('');
   const [confirmState, setConfirmState] = useState({ show: false, id: null, date: "" });
+  const [deleteMemberDialog, setDeleteMemberDialog] = useState({ show: false, memberId: null, memberName: '' });
 
   // Helper: id to name
-  const getMemberName = (id) => {
+  const getMemberName = useCallback((id) => {
     const m = members.find(m => m.id === id);
     return m ? m.name : id;
-  };
+  }, [members]);
 
-  // সদস্য লোড
-  useEffect(() => {
-    const fetchMembers = async () => {
-      const snapshot = await getDocs(collection(db, 'members'));
-      setMembers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    };
-    fetchMembers();
+  // Fetch members
+  const fetchMembers = useCallback(async () => {
+    const snapshot = await getDocs(collection(db, 'members'));
+    setMembers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   }, []);
 
-  // Meal লোড
-  useEffect(() => {
-    const fetchSavedMeals = async () => {
-      const snapshot = await getDocs(collection(db, 'meals'));
-      const allMeals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setSavedMeals(allMeals.filter(m => m.monthId === currentMonth));
-    };
-    if (currentMonth) fetchSavedMeals();
+  // Fetch meals for current month
+  const fetchSavedMeals = useCallback(async () => {
+    const snapshot = await getDocs(collection(db, 'meals'));
+    const allMeals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setSavedMeals(allMeals.filter(m => m.monthId === currentMonth));
   }, [currentMonth]);
 
-  // Delete (Custom Confirm)
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
+
+  useEffect(() => {
+    if (currentMonth) fetchSavedMeals();
+  }, [currentMonth, fetchSavedMeals]);
+
+  // Delete Meal (single)
   const handleDelete = async (mealId) => {
     await deleteDoc(doc(db, 'meals', mealId));
-    setSavedMeals(prev => prev.filter(m => m.id !== mealId));
+    await fetchSavedMeals();
     showToast && showToast("মিল ডিলিট হয়েছে!", "success");
   };
 
-  // Edit শুরু
+  // Start Edit
   const handleEdit = (meal) => {
     setEditingMealId(meal.id);
     setEditData(meal.meals);
@@ -69,7 +140,7 @@ export default function Meals({ showToast }) {
     showToast && showToast("এডিট মোডে আছেন!", "info");
   };
 
-  // Edit ইনপুট পরিবর্তন
+  // Edit Change
   const handleEditChange = (memberId, type, value) => {
     setEditData(prev => ({
       ...prev,
@@ -80,7 +151,7 @@ export default function Meals({ showToast }) {
     }));
   };
 
-  // Edit সেভ
+  // Save Edit
   const handleSaveEdit = async () => {
     const mealEntered = Object.values(editData).some(
       m => Number(m.breakfast) > 0 || Number(m.lunch) > 0 || Number(m.dinner) > 0
@@ -95,13 +166,25 @@ export default function Meals({ showToast }) {
     await updateDoc(docRef, {
       meals: editData
     });
-    setSavedMeals(prev =>
-      prev.map(m => m.id === editingMealId ? { ...m, meals: editData } : m)
-    );
+    await fetchSavedMeals();
     setEditingMealId(null);
     setEditData({});
     setError('');
     showToast && showToast("মিল আপডেট হয়েছে!", "success");
+  };
+
+  // Member Delete Modal show function (you can place this where you want, or use from parent)
+  const openDeleteMember = (memberId, memberName) => {
+    setDeleteMemberDialog({ show: true, memberId, memberName });
+  };
+
+  // Confirm Delete Member (utility call)
+  const handleDeleteMember = async () => {
+    await deleteMemberCompletely(deleteMemberDialog.memberId, deleteMemberDialog.memberName);
+    await fetchMembers();
+    await fetchSavedMeals();
+    setDeleteMemberDialog({ show: false, memberId: null, memberName: '' });
+    showToast && showToast("সদস্য এবং সংশ্লিষ্ট সব হিসাব ডিলিট হয়েছে!", "success");
   };
 
   return (
@@ -115,10 +198,7 @@ export default function Meals({ showToast }) {
           overflow: 'hidden',
         }}
       >
-        {/* Top divider */}
         <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
-
-        {/* Title */}
         <Box px={3} pt={2} pb={1}>
           <Typography variant="h6" fontWeight={700} color="primary">
             📅 সেভকৃত মিল তালিকা ({currentMonth || "নির্বাচিত নয়"})
@@ -128,23 +208,22 @@ export default function Meals({ showToast }) {
         <Box
           sx={{
             px: 0,
-            borderLeft: '2px solid #1976d2',
-            borderRight: '2px solid #1976d2',
+            borderLeft: '2px solid #3bb59a',
+            borderRight: '2px solid #3bb59a',
             borderRadius: 0,
             overflow: 'hidden',
             pb: 4,
           }}
         >
-          {/* No meal message */}
           {savedMeals.length === 0 && (
             <Typography sx={{ mb: 2, color: "#777", px: 3 }}>
               এই মাসে এখনও কোন মিল এন্ট্রি নেই।
             </Typography>
           )}
 
-          {/* Meal cards (grid) */}
           <Grid container spacing={3} alignItems="stretch" sx={{ px: 2 }}>
             {savedMeals
+              .filter(meal => meal.meals && Object.keys(meal.meals).length > 0)
               .sort((a, b) => a.date.localeCompare(b.date))
               .map(meal => (
                 <Grid
@@ -176,7 +255,6 @@ export default function Meals({ showToast }) {
                         pb: "16px !important"
                       }}
                     >
-                      {/* Top part */}
                       <Box
                         sx={{
                           display: 'flex',
@@ -220,7 +298,6 @@ export default function Meals({ showToast }) {
                         )}
                       </Box>
 
-                      {/* Table or Edit Form */}
                       <Box sx={{ flex: 1 }}>
                         {editingMealId === meal.id ? (
                           <>
@@ -324,14 +401,16 @@ export default function Meals({ showToast }) {
                               </TableHead>
                               <TableBody>
                                 {Object.entries(meal.meals).map(([mid, mealObj]) => (
-                                  <TableRow key={mid}>
-                                    <TableCell>
-                                      <b>{getMemberName(mid)}</b>
-                                    </TableCell>
-                                    <TableCell align="center">{mealObj.breakfast || 0}</TableCell>
-                                    <TableCell align="center">{mealObj.lunch || 0}</TableCell>
-                                    <TableCell align="center">{mealObj.dinner || 0}</TableCell>
-                                  </TableRow>
+                                  members.some(m => m.id === mid) && ( // only show if member exists
+                                    <TableRow key={mid}>
+                                      <TableCell>
+                                        <b>{getMemberName(mid)}</b>
+                                      </TableCell>
+                                      <TableCell align="center">{mealObj.breakfast || 0}</TableCell>
+                                      <TableCell align="center">{mealObj.lunch || 0}</TableCell>
+                                      <TableCell align="center">{mealObj.dinner || 0}</TableCell>
+                                    </TableRow>
+                                  )
                                 ))}
                               </TableBody>
                             </Table>
@@ -344,9 +423,7 @@ export default function Meals({ showToast }) {
               ))}
           </Grid>
         </Box>
-        {/* Bottom divider */}
         <Divider sx={{ borderBottomWidth: 2, borderColor: 'primary.main' }} />
-        {/* Footer note */}
         <Box px={3} py={2}>
           <Typography sx={{ color: "gray" }}>
             <b>নোট:</b> মিল এন্ট্রি বা আপডেটের পর রেট/রিপোর্ট অটো আপডেট হবে।
@@ -354,7 +431,7 @@ export default function Meals({ showToast }) {
         </Box>
       </Paper>
 
-      {/* Custom Confirm Modal */}
+      {/* Meal Delete Confirm */}
       <ConfirmDialog
         show={confirmState.show}
         message={`তারিখ: ${confirmState.date} - এই মিলটি ডিলিট করবেন?`}
@@ -363,6 +440,19 @@ export default function Meals({ showToast }) {
           setConfirmState({ show: false, id: null, date: "" });
         }}
         onCancel={() => setConfirmState({ show: false, id: null, date: "" })}
+      />
+
+      {/* Member Delete Confirm */}
+      <ConfirmDialog
+        show={deleteMemberDialog.show}
+        message={
+          <span>
+            <b>{deleteMemberDialog.memberName}</b> এবং তার সমস্ত হিসাব ডিলিট করবেন?<br />
+            <span style={{ color: 'red' }}>সব meal, expense, bazar, deposit মুছে যাবে।</span>
+          </span>
+        }
+        onConfirm={handleDeleteMember}
+        onCancel={() => setDeleteMemberDialog({ show: false, memberId: null, memberName: '' })}
       />
     </Box>
   );

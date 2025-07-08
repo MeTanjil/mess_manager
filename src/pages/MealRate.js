@@ -5,7 +5,6 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
-
 import {
   Box, Paper, Typography, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Card, CardContent, Stack, Divider,
@@ -15,92 +14,80 @@ const db = getFirestore();
 
 export default function MealRate() {
   const [members, setMembers] = useState([]);
-  const [meals, setMeals] = useState([]);
-  const [bazars, setBazars] = useState([]);
-  const [mealRate, setMealRate] = useState(0);
   const [memberMeals, setMemberMeals] = useState({});
   const [distributedCost, setDistributedCost] = useState({});
+  const [mealRate, setMealRate] = useState(0);
+  const [totalBazar, setTotalBazar] = useState(0);
+  const [totalMeals, setTotalMeals] = useState(0);
   const { currentMonth } = useMonth();
 
   useEffect(() => {
-    const fetchAll = async () => {
-      // Member load
-      const memberSnap = await getDocs(collection(db, 'members'));
-      const memberData = memberSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMembers(memberData);
+    if (!currentMonth) return;
+    (async () => {
+      // Load all in parallel
+      const [memberSnap, mealSnap, bazarSnap] = await Promise.all([
+        getDocs(collection(db, 'members')),
+        getDocs(collection(db, 'meals')),
+        getDocs(collection(db, 'bazar'))
+      ]);
 
-      // Meals load (month wise)
-      const mealSnap = await getDocs(collection(db, 'meals'));
-      const allMealData = mealSnap.docs.map(doc => doc.data());
-      const filteredMeals = allMealData.filter(m => m.monthId === currentMonth);
-      setMeals(filteredMeals);
+      const members = memberSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMembers(members);
 
-      // Bazar load (month wise)
-      const bazarSnap = await getDocs(collection(db, 'bazar'));
-      const allBazarData = bazarSnap.docs.map(doc => doc.data());
-      const filteredBazars = allBazarData.filter(b => b.monthId === currentMonth);
-      setBazars(filteredBazars);
+      const meals = mealSnap.docs.map(doc => doc.data()).filter(m => m.monthId === currentMonth);
+      const bazars = bazarSnap.docs.map(doc => doc.data()).filter(b => b.monthId === currentMonth);
 
-      // Calculation
-      let totalMeals = 0;
-      const memberMealCount = {};
-
-      filteredMeals.forEach((day) => {
+      let totalMeals = 0, memberMealCount = {};
+      meals.forEach(day => {
         Object.entries(day.meals).forEach(([memberId, meal]) => {
-          const total = Number(meal.breakfast || 0) + Number(meal.lunch || 0) + Number(meal.dinner || 0);
-          totalMeals += total;
-          memberMealCount[memberId] = (memberMealCount[memberId] || 0) + total;
+          const t = Number(meal.breakfast || 0) + Number(meal.lunch || 0) + Number(meal.dinner || 0);
+          totalMeals += t;
+          memberMealCount[memberId] = (memberMealCount[memberId] || 0) + t;
         });
       });
 
-      const totalBazarCost = filteredBazars.reduce((sum, b) => sum + Number(b.amount), 0);
+      const totalBazarCost = bazars.reduce((sum, b) => sum + Number(b.amount), 0);
+      setTotalBazar(Math.round(totalBazarCost));
+      setTotalMeals(totalMeals);
 
-      // Exact meal rate (decimal সহ)
+      // Exact meal rate
       const exactMealRate = totalMeals > 0 ? totalBazarCost / totalMeals : 0;
 
-      // Member-wise exact meal cost (decimal সহ)
-      const costs = memberData.map(m => ({
+      // Calc cost for each member
+      const costs = members.map(m => ({
         id: m.id,
-        name: m.name,
         mealCount: memberMealCount[m.id] || 0,
         exactCost: (memberMealCount[m.id] || 0) * exactMealRate,
       }));
 
-      // Step 1: প্রতিটা member এর cost কে floor (নীচের integer) করি
-      const flooredCosts = costs.map(c => ({
+      // Step 1: floor
+      const floored = costs.map(c => ({
         ...c,
         floorCost: Math.floor(c.exactCost),
         decimal: c.exactCost - Math.floor(c.exactCost),
       }));
+      const totalFloor = floored.reduce((sum, c) => sum + c.floorCost, 0);
 
-      // Step 2: Total floor cost যোগ করি
-      const totalFloorCost = flooredCosts.reduce((sum, c) => sum + c.floorCost, 0);
+      // Step 2: rest to distribute (rounding adjust)
+      let rest = Math.round(totalBazarCost - totalFloor);
 
-      // Step 3: Total bazar - total floor cost = বাকি টাকা (adjustable)
-      let remaining = Math.round(totalBazarCost - totalFloorCost);
+      // Step 3: who gets +1? (descending decimal)
+      const sorted = [...floored].sort((a, b) => b.decimal - a.decimal);
 
-      // Step 4: কারা ১ টাকা বেশি পাবে ঠিক করি
-      const sortedByDecimal = [...flooredCosts].sort((a, b) => b.decimal - a.decimal);
-
-      // Step 5: Distributed cost বানাই
+      // Step 4: distributed cost object
       const distributed = {};
-      sortedByDecimal.forEach((c, idx) => {
-        distributed[c.id] = c.floorCost + (idx < remaining ? 1 : 0);
+      sorted.forEach((c, idx) => {
+        distributed[c.id] = c.floorCost + (idx < rest ? 1 : 0);
       });
 
       setMealRate(Math.round(exactMealRate));
       setMemberMeals(memberMealCount);
       setDistributedCost(distributed);
-    };
-
-    if (currentMonth) {
-      fetchAll();
-    }
+    })();
   }, [currentMonth]);
 
-  const totalBazarInt = Math.round(bazars.reduce((sum, b) => sum + Number(b.amount), 0));
-  const totalMealInt = Object.values(memberMeals).reduce((sum, m) => sum + m, 0);
-  const totalCost = Object.values(distributedCost).reduce((sum, c) => sum + c, 0);
+  // For summary
+  const totalCost = Object.values(distributedCost).reduce((a, b) => a + b, 0);
 
   return (
     <Box maxWidth="lg" mx="auto" mt={4} px={2}>
@@ -142,13 +129,13 @@ export default function MealRate() {
           <Card sx={{ minWidth: 170, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 0, flex: 1 }}>
             <CardContent>
               <Typography fontSize={15}>💸 মোট বাজার</Typography>
-              <Typography variant="h6" color="secondary">{totalBazarInt} টাকা</Typography>
+              <Typography variant="h6" color="secondary">{totalBazar} টাকা</Typography>
             </CardContent>
           </Card>
           <Card sx={{ minWidth: 170, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 0, flex: 1 }}>
             <CardContent>
               <Typography fontSize={15}>🍽️ মোট মিল</Typography>
-              <Typography variant="h6" color="success.main">{totalMealInt} টি</Typography>
+              <Typography variant="h6" color="success.main">{totalMeals} টি</Typography>
             </CardContent>
           </Card>
           <Card sx={{ minWidth: 170, bgcolor: "#f8f9fa", borderRadius: 3, boxShadow: 0, flex: 1 }}>
@@ -159,7 +146,7 @@ export default function MealRate() {
           </Card>
         </Stack>
 
-        {/* Left/Right Divider (table border) */}
+        {/* Table */}
         <Box
           sx={{
             px: 0,
@@ -169,12 +156,10 @@ export default function MealRate() {
             overflow: 'hidden',
           }}
         >
-          {/* Subtitle */}
           <Typography variant="subtitle1" fontWeight={700} sx={{ px: 3, mt: 1, mb: 1, textAlign: "left" }}>
             👤 মেম্বার অনুযায়ী হিসাব
           </Typography>
 
-          {/* Table */}
           <TableContainer component={Box} sx={{ mb: 1 }}>
             <Table size="small">
               <TableHead>
@@ -214,7 +199,7 @@ export default function MealRate() {
         {/* Footer notes */}
         <Box px={3} py={2}>
           <Typography sx={{ color: "gray" }}>
-            <b>নোট:</b> সব কস্ট যোগ করলে মোট বাজারের সাথে একদম মিলবে।  
+            <b>নোট:</b> সব কস্ট যোগ করলে মোট বাজারের সাথে একদম মিলবে।
             কারো কস্ট ১ টাকা বেশি বা কম থাকলেও, সবাইকে একদম সমানভাবে ভাগ করা হয়েছে।
           </Typography>
           <Typography sx={{ color: "green", mt: 1, fontWeight: 700 }}>

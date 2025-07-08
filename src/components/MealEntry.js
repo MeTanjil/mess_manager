@@ -1,19 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getFirestore, collection, addDoc, query, where, getDocs, limit } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
 import {
   Box, Paper, Card, CardContent, Typography, Button, TextField,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Stack, Divider
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Stack, Divider, CircularProgress
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 const db = getFirestore();
 
-export default function MealEntry({ members, showToast }) {
+export default function MealEntry({ showToast }) {
   const [date, setDate] = useState('');
   const [mealData, setMealData] = useState({});
   const { currentMonth } = useMonth();
+
+  // নতুন: live members fetch (fast reflect)
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let unsub = false;
+    const fetchMembers = async () => {
+      setLoading(true);
+      const snap = await getDocs(collection(db, 'members'));
+      if (unsub) return;
+      setMembers(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    };
+    fetchMembers();
+    // Cleanup
+    return () => { unsub = true; };
+  }, []);
 
   const handleChange = (memberId, type, value) => {
     setMealData(prev => ({
@@ -99,8 +117,8 @@ export default function MealEntry({ members, showToast }) {
         <Box
           sx={{
             px: 0,
-            borderLeft: '2px solid #1976d2',
-            borderRight: '2px solid #1976d2',
+            borderLeft: '2px solid #3bb59a',
+            borderRight: '2px solid #3bb59a',
             borderRadius: 0,
             overflow: 'hidden',
           }}
@@ -127,13 +145,20 @@ export default function MealEntry({ members, showToast }) {
                     </Typography>
                   </Stack>
 
-                  {members.length === 0 && (
+                  {loading && (
+                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                      <CircularProgress size={20} color="success" />
+                      <Typography color="info.main" fontWeight={500}>মেম্বার লোড হচ্ছে...</Typography>
+                    </Stack>
+                  )}
+
+                  {!loading && members.length === 0 && (
                     <Typography color="error" sx={{ mb: 2 }}>
                       কোনো সদস্য নেই, আগে সদস্য যোগ করুন।
                     </Typography>
                   )}
 
-                  {members.length > 0 && (
+                  {!loading && members.length > 0 && (
                     <TableContainer component={Box} sx={{ boxShadow: 0, mb: 3 }}>
                       <Table size="small">
                         <TableHead>
@@ -242,7 +267,7 @@ export default function MealEntry({ members, showToast }) {
                       fontSize: 16,
                       mt: 1
                     }}
-                    disabled={members.length === 0}
+                    disabled={loading || members.length === 0}
                   >
                     ✅ সেভ করুন
                   </Button>

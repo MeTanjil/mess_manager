@@ -14,6 +14,7 @@ export default function SignInSignUp() {
   const [msg, setMsg] = useState('');
   const navigate = useNavigate();
 
+  // Main handleSubmit with direct navigate (NO setTimeout)
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -25,7 +26,8 @@ export default function SignInSignUp() {
         await signin(email, password);
         setMsg("সাইন ইন সফল হয়েছে!");
       }
-      setTimeout(() => navigate('/dashboard'), 900);
+      // Navigate directly (no delay)
+      navigate('/dashboard');
     } catch (err) {
       setMsg(`ত্রুটি: ${err.message}`);
     }

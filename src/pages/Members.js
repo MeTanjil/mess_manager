@@ -7,6 +7,9 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  query,
+  where,
+  writeBatch
 } from 'firebase/firestore';
 import {
   Card, Typography, Box, Grid, Button, TextField,
@@ -26,7 +29,7 @@ export default function Members({ showToast }) {
   const [editId, setEditId] = useState(null);
   const [confirmState, setConfirmState] = useState({ show: false, id: null, name: "" });
 
-  // সদস্য লোড
+  // Load members fast
   const fetchMembers = async () => {
     const snapshot = await getDocs(collection(db, 'members'));
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -37,7 +40,7 @@ export default function Members({ showToast }) {
     fetchMembers();
   }, []);
 
-  // সদস্য যোগ/আপডেট
+  // Add/Update member
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -57,19 +60,48 @@ export default function Members({ showToast }) {
     fetchMembers();
   };
 
-  // এডিট
+  // Edit
   const handleEdit = (m) => {
     setName(m.name);
     setEditId(m.id);
     showToast && showToast("এডিট মোডে আছেন!", "info");
   };
 
-  // **Cascade Batch Delete: Member + Meals + Bazar + Deposit + Expenses**
+  // **Fast Cascade Batch Delete: Member + Meals + Bazar + Deposit + Expenses**
   const handleDelete = async (id) => {
     const member = members.find(m => m.id === id);
     if (!member) return;
-    await deleteDoc(doc(db, 'members', id));
-    // ... (cascade delete logic will go here if needed)
+
+    // Start batch
+    const batch = writeBatch(db);
+
+    // 1. Delete member doc
+    batch.delete(doc(db, 'members', id));
+
+    // 2. Remove from meals (remove property from meals object)
+    const mealSnap = await getDocs(collection(db, 'meals'));
+    mealSnap.forEach(d => {
+      const mealsObj = d.data().meals || {};
+      if (mealsObj[id]) {
+        const newMeals = { ...mealsObj };
+        delete newMeals[id];
+        batch.update(doc(db, 'meals', d.id), { meals: newMeals });
+      }
+    });
+
+    // 3. Delete all expenses (payerId === id)
+    const expenseSnap = await getDocs(query(collection(db, 'expenses'), where('payerId', '==', id)));
+    expenseSnap.forEach(d => batch.delete(doc(db, 'expenses', d.id)));
+
+    // 4. Delete all deposits (member === member.name)
+    const depositSnap = await getDocs(query(collection(db, 'deposits'), where('member', '==', member.name)));
+    depositSnap.forEach(d => batch.delete(doc(db, 'deposits', d.id)));
+
+    // 5. Delete all bazar (person === member.name)
+    const bazarSnap = await getDocs(query(collection(db, 'bazar'), where('person', '==', member.name)));
+    bazarSnap.forEach(d => batch.delete(doc(db, 'bazar', d.id)));
+
+    await batch.commit();
     fetchMembers();
     showToast && showToast("সদস্য এবং সংশ্লিষ্ট সব হিসাব দ্রুত ডিলিট হয়েছে!", "success");
   };
@@ -106,8 +138,8 @@ export default function Members({ showToast }) {
         <Box
           sx={{
             px: 0,
-            borderLeft: '2px solid #1976d2',
-            borderRight: '2px solid #1976d2',
+            borderLeft: '2px solid #3bb59a',
+            borderRight: '2px solid #3bb59a',
             borderRadius: 0,
             overflow: 'hidden',
             pb: 4,
@@ -202,10 +234,10 @@ export default function Members({ showToast }) {
                         display: "flex",
                         alignItems: "center",
                         minWidth: 0,
-                        pr: 5,
+                        pr: 24, // Maximum gap for clear separation
                       }}>
                         <Avatar sx={{
-                          bgcolor: "#1976d2",
+                          bgcolor: "#3bb59a",
                           width: 44, height: 44, fontWeight: 700, mr: 2, fontSize: 22
                         }}>
                           {getInitial(m.name)}
@@ -215,7 +247,7 @@ export default function Members({ showToast }) {
                         </Typography>
                       </Box>
                       {/* Actions */}
-                      <Box sx={{ minWidth: 100, textAlign: "center" }}>
+                      <Box sx={{ minWidth: 170, textAlign: "center" }}>
                         <Stack direction="row" spacing={2} justifyContent="center">
                           <Tooltip title="এডিট">
                             <IconButton

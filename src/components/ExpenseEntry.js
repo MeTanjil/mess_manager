@@ -3,10 +3,9 @@ import {
   getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc
 } from 'firebase/firestore';
 import { useMonth } from '../context/MonthContext';
-
 import {
   Box, Paper, Card, CardContent, Typography, Button, TextField, Select, MenuItem, InputLabel, FormControl,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Stack, Tooltip, Divider
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Stack, Tooltip, Divider, CircularProgress
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import EditIcon from '@mui/icons-material/Edit';
@@ -15,8 +14,27 @@ import CloseIcon from '@mui/icons-material/Close';
 
 const db = getFirestore();
 
-export default function ExpenseEntry({ members, showToast }) {
+export default function ExpenseEntry({ showToast }) {
   const { currentMonth } = useMonth();
+
+  // Live fetch members (fast reflect)
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(true);
+
+  useEffect(() => {
+    let unsub = false;
+    const fetchMembers = async () => {
+      setMembersLoading(true);
+      const snap = await getDocs(collection(db, 'members'));
+      if (unsub) return;
+      setMembers(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setMembersLoading(false);
+    };
+    fetchMembers();
+    return () => { unsub = true; };
+  }, []);
+
+  // Expense states
   const [date, setDate] = useState('');
   const [amount, setAmount] = useState('');
   const [purpose, setPurpose] = useState('');
@@ -25,7 +43,7 @@ export default function ExpenseEntry({ members, showToast }) {
   const [expenses, setExpenses] = useState([]);
   const [editId, setEditId] = useState(null);
 
-  // খরচের তালিকা লোড
+  // Fast expense fetch
   const fetchExpenses = async () => {
     const q = query(collection(db, 'expenses'), where('monthId', '==', currentMonth));
     const snapshot = await getDocs(q);
@@ -38,7 +56,7 @@ export default function ExpenseEntry({ members, showToast }) {
     // eslint-disable-next-line
   }, [currentMonth]);
 
-  // খরচ সেভ বা আপডেট
+  // Save/update handler
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -147,8 +165,8 @@ export default function ExpenseEntry({ members, showToast }) {
         <Box
           sx={{
             px: 0,
-            borderLeft: '2px solid #1976d2',
-            borderRight: '2px solid #1976d2',
+            borderLeft: '2px solid #3bb59a',
+            borderRight: '2px solid #3bb59a',
             borderRadius: 0,
             overflow: 'hidden',
           }}
@@ -169,20 +187,28 @@ export default function ExpenseEntry({ members, showToast }) {
                       sx={{ bgcolor: "#fff" }}
                       size="small"
                     />
-                    <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
-                      <InputLabel id="payer-label">কে টাকা দিয়েছে?</InputLabel>
-                      <Select
-                        labelId="payer-label"
-                        value={payerId}
-                        label="কে টাকা দিয়েছে?"
-                        onChange={e => setPayerId(e.target.value)}
-                      >
-                        <MenuItem value=""><em>সদস্য নির্বাচন করুন</em></MenuItem>
-                        {members.map(m => (
-                          <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    {/* Member loading indicator */}
+                    {membersLoading ? (
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <CircularProgress size={18} color="success" />
+                        <Typography fontSize={14} color="info.main">মেম্বার লোড হচ্ছে...</Typography>
+                      </Stack>
+                    ) : (
+                      <FormControl fullWidth required size="small" sx={{ bgcolor: "#fff" }}>
+                        <InputLabel id="payer-label">কে টাকা দিয়েছে?</InputLabel>
+                        <Select
+                          labelId="payer-label"
+                          value={payerId}
+                          label="কে টাকা দিয়েছে?"
+                          onChange={e => setPayerId(e.target.value)}
+                        >
+                          <MenuItem value=""><em>সদস্য নির্বাচন করুন</em></MenuItem>
+                          {members.map(m => (
+                            <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
                     <TextField
                       label="পরিমাণ (৳)"
                       type="number"
@@ -223,6 +249,7 @@ export default function ExpenseEntry({ members, showToast }) {
                         variant="contained"
                         startIcon={editId ? <EditIcon /> : <SaveIcon />}
                         sx={{ px: 4, fontWeight: 600, fontSize: 16, borderRadius: 2 }}
+                        disabled={membersLoading}
                       >
                         {editId ? "আপডেট করুন" : "সংরক্ষণ করুন"}
                       </Button>
@@ -275,7 +302,7 @@ export default function ExpenseEntry({ members, showToast }) {
                     }}>
                       <TableCell align="center" sx={{ fontSize: 16 }}>{exp.date}</TableCell>
                       <TableCell align="center" sx={{ fontSize: 16 }}>{getMemberName(exp.payerId)}</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 700, color: "#1976d2", fontSize: 17 }}>
+                      <TableCell align="center" sx={{ fontWeight: 700, color: "#3bb59a", fontSize: 17 }}>
                         {exp.amount} টাকা
                       </TableCell>
                       <TableCell align="center" sx={{ fontSize: 15, wordBreak: "break-word" }}>{exp.purpose}</TableCell>
@@ -296,11 +323,11 @@ export default function ExpenseEntry({ members, showToast }) {
                                 px: 1.2,
                                 borderRadius: 2,
                                 fontWeight: 600,
-                                border: "1.5px solid #1976d2",
+                                border: "1.5px solid #3bb59a",
                                 background: "#f7fbff",
                                 '&:hover': {
                                   background: "#e3f0ff",
-                                  border: "1.5px solid #0a56a3"
+                                  border: "1.5px solid #219775"
                                 },
                                 boxShadow: 0,
                                 textTransform: "none",

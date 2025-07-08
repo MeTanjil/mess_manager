@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   getFirestore,
   collection,
@@ -34,28 +34,21 @@ export default function Deposit({ showToast }) {
   const { currentMonth } = useMonth();
   const [confirmState, setConfirmState] = useState({ show: false, id: null, date: '', member: '' });
 
-  useEffect(() => {
-    const fetchMembers = async () => {
-      const snapshot = await getDocs(collection(db, 'members'));
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMembers(data);
-    };
-    fetchMembers();
+  // fetchMembers always fresh
+  const fetchMembers = useCallback(async () => {
+    const snapshot = await getDocs(collection(db, 'members'));
+    setMembers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   }, []);
 
-  const fetchDeposits = async () => {
+  // fetchDeposits always fresh
+  const fetchDeposits = useCallback(async () => {
     const snapshot = await getDocs(collection(db, 'deposits'));
     const allData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const filtered = allData.filter(item => item.monthId === currentMonth);
-    setDepositList(filtered);
-  };
-
-  useEffect(() => {
-    if (currentMonth) {
-      fetchDeposits();
-    }
-    // eslint-disable-next-line
+    setDepositList(allData.filter(item => item.monthId === currentMonth));
   }, [currentMonth]);
+
+  useEffect(() => { fetchMembers(); }, [fetchMembers]);
+  useEffect(() => { if (currentMonth) fetchDeposits(); }, [currentMonth, fetchDeposits]);
 
   const resetForm = () => {
     setDate('');
@@ -82,8 +75,7 @@ export default function Deposit({ showToast }) {
 
     try {
       if (editingId) {
-        const ref = doc(db, 'deposits', editingId);
-        await updateDoc(ref, {
+        await updateDoc(doc(db, 'deposits', editingId), {
           date,
           member,
           amount: parseFloat(amount),
@@ -116,8 +108,8 @@ export default function Deposit({ showToast }) {
 
   const handleDelete = async (id) => {
     await deleteDoc(doc(db, 'deposits', id));
-    fetchDeposits();
     showToast && showToast('জমা ডিলিট হয়েছে!', 'success');
+    fetchDeposits();
   };
 
   return (

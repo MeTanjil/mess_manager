@@ -15,26 +15,35 @@ export default function Dashboard() {
   const [deposits, setDeposits] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Fast fetch all Firestore data in parallel
   useEffect(() => {
+    let unsub = false;
     const fetchAll = async () => {
       setLoading(true);
-      const memberSnap = await getDocs(collection(db, 'members'));
+      // All fetches in parallel
+      const [
+        memberSnap,
+        mealSnap,
+        bazarSnap,
+        depositSnap
+      ] = await Promise.all([
+        getDocs(collection(db, 'members')),
+        getDocs(collection(db, 'meals')),
+        getDocs(collection(db, 'bazar')),
+        getDocs(collection(db, 'deposits'))
+      ]);
+      if (unsub) return;
       setMembers(memberSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
-      const mealSnap = await getDocs(collection(db, 'meals'));
       setMeals(mealSnap.docs.map(doc => doc.data()).filter(m => m.monthId === currentMonth));
-
-      const bazarSnap = await getDocs(collection(db, 'bazar'));
       setBazars(bazarSnap.docs.map(doc => doc.data()).filter(b => b.monthId === currentMonth));
-
-      const depositSnap = await getDocs(collection(db, 'deposits'));
       setDeposits(depositSnap.docs.map(doc => doc.data()).filter(d => d.monthId === currentMonth));
-
       setLoading(false);
     };
     if (currentMonth) fetchAll();
+    return () => { unsub = true; };
   }, [currentMonth]);
 
+  // Data processing (pure JS, super fast)
   let totalMeals = 0;
   const memberMeals = {};
   meals.forEach(day => {
@@ -97,8 +106,8 @@ export default function Dashboard() {
         <Box
           sx={{
             px: 0,
-            borderLeft: '2px solid #1976d2',
-            borderRight: '2px solid #1976d2',
+            borderLeft: '2px solid #3bb59a',
+            borderRight: '2px solid #3bb59a',
             borderRadius: 0,
             overflow: 'hidden',
             pb: 4,
